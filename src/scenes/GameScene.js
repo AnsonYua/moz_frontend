@@ -15,10 +15,12 @@ export default class GameScene extends Phaser.Scene {
   }
 
   init(data) {
+    console.log('GameScene init called with data:', data);
     this.gameStateManager = data.gameStateManager;
   }
 
   create() {
+    console.log('GameScene create method called');
     this.createBackground();
     this.createGameBoard();
     this.createUI();
@@ -43,6 +45,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   createGameBoard() {
+    console.log('createGameBoard called');
     const { width, height } = this.cameras.main;
     // card size 130x190
     // Define layout positions
@@ -56,7 +59,11 @@ export default class GameScene extends Phaser.Scene {
         left: { x:width * 0.5- 130- 50, y:  startY + 100+ cardHeight + 10+ 15},
         right: { x: width * 0.5 + 130 +  50, y:  startY + 100+ cardHeight + 10+ 15},
         help: { x: width * 0.5- 130- 50, y: startY + 100+ 0},
-        sp: { x:  width * 0.5 + 130 +  50, y: startY + 100+ 0}
+        sp: { x:  width * 0.5 + 130 +  50, y: startY + 100+ 0},
+        leader: { x: width * 0.5, y: startY + 100+ 0},
+        deck: { x: width * 0.5 - 130 -  50 - 130 - 50 , y: startY + 100+ cardHeight+10+15},
+        leaderDeck: { x: width * 0.5 + 130 +  50 + 130 + 50 , y: startY + 100+ cardHeight+10+15},
+        
       },
       // Player zones (bottom area)
       player: {
@@ -64,7 +71,10 @@ export default class GameScene extends Phaser.Scene {
         left: { x: width * 0.5- 130- 50, y: startY + 100+ cardHeight + 10+ 15 +cardHeight + 70},
         right: { x: width * 0.5 + 130 +  50, y: startY + 100+ cardHeight + 10+ 15 +cardHeight + 70 },
         help: { x: width * 0.5- 130- 50, y: startY + 100+ cardHeight + 10+ 15 +cardHeight + 70 + cardHeight +30 },
-        sp: { x: width * 0.5 + 130 +  50,y: startY + 100+ cardHeight + 10+ 15 +cardHeight + 70 + cardHeight +30 }
+        sp: { x: width * 0.5 + 130 +  50,y: startY + 100+ cardHeight + 10+ 15 +cardHeight + 70 + cardHeight +30 },
+        leader: { x: width * 0.5, y: startY + 100+ cardHeight + 10+ 15 +cardHeight + 70 + cardHeight +30},
+        deck: { x: width * 0.5 + 130 + 50+130+50 , y: startY + 100+ cardHeight + 10+ 15 +cardHeight + 70},
+        leaderDeck: { x: width * 0.5 - 130 - 50 - 130 - 70 , y: startY + 100+ cardHeight + 10+ 15 +cardHeight + 70 + 50}
       },
       // Battle area (center)
       //battle: { x: width * 0.5, y: height * 0.45 },
@@ -77,11 +87,17 @@ export default class GameScene extends Phaser.Scene {
   }
 
   createZones() {
+    
     // Create opponent zones
     this.opponentZones = {};
-    Object.entries(this.layout.opponent).forEach(([zoneType, position]) => {
+    console.log('About to iterate over opponent zones');
+    const opponentEntries = Object.entries(this.layout.opponent);
+    console.log('Opponent entries:', opponentEntries);
+    opponentEntries.forEach(([zoneType, position]) => {
+      console.log('Processing zone:', zoneType);
       const zone = this.createZone(position.x, position.y, zoneType, false);
       this.opponentZones[zoneType] = zone;
+      
     });
     
     // Create player zones
@@ -93,12 +109,14 @@ export default class GameScene extends Phaser.Scene {
     
     // Add zone labels
     this.addZoneLabels();
+    
+    // Create deck visualizations
+    this.createDeckVisualizations();
   }
 
   createZone(x, y, type, isPlayerZone) {
     // Zone placeholder
     const placeholder = this.add.image(x, y, 'zone-placeholder');
-    
     // Zone label
     const label = this.add.text(x, y + 95, type.toUpperCase(), {
       fontSize: '12px',
@@ -107,6 +125,13 @@ export default class GameScene extends Phaser.Scene {
       align: 'center'
     });
     label.setOrigin(0.5);
+    if(type === 'leaderDeck' ) {
+      placeholder.setRotation(Math.PI / 2); // Rotate 90 degrees
+      label.setAlpha(1); // Show the label
+      label.setY(label.y - 20); // Move label up by 5 pixels
+    }else{
+      label.setAlpha(1); // Show the label
+    }
     
     // Zone interaction (only for player zones)
     if (isPlayerZone) {
@@ -192,6 +217,49 @@ export default class GameScene extends Phaser.Scene {
       align: 'center'
     }).setOrigin(0.5);
     */
+  }
+
+  createDeckVisualizations() {
+    // Create deck visualizations for opponent and player deck zones
+    // These will be shown after shuffle animation completes
+    this.playerDeckStack = this.createDeckStack(this.layout.player.deck.x, this.layout.player.deck.y, 'player');
+    this.opponentDeckStack = this.createDeckStack(this.layout.opponent.deck.x, this.layout.opponent.deck.y, 'opponent');
+    
+    // Hide the deck stacks initially
+    this.playerDeckStack.forEach(card => card.setVisible(false));
+    this.opponentDeckStack.forEach(card => card.setVisible(false));
+  }
+
+  createDeckStack(x, y, owner) {
+    // Create a stack of card backs to represent the deck
+    const numCards = 5;
+    const stackOffset = 1;
+    const deckCards = [];
+    
+    for (let i = 0; i < numCards; i++) {
+      const card = this.add.image(x + (i * stackOffset), y - (i * stackOffset), 'card-back');
+      
+      // Scale card to match our card config dimensions
+      const scaleX = GAME_CONFIG.card.width / card.width;
+      const scaleY = GAME_CONFIG.card.height / card.height;
+      card.setScale(Math.min(scaleX, scaleY) * 0.6); // Scale down for deck stack
+      
+      card.setDepth(i);
+      card.setAlpha(0.8 - (i * 0.1)); // Fade cards as they go deeper in stack
+      
+      deckCards.push(card);
+      
+      // Store reference for potential updates
+      if (owner === 'player') {
+        if (!this.playerDeckCards) this.playerDeckCards = [];
+        this.playerDeckCards.push(card);
+      } else {
+        if (!this.opponentDeckCards) this.opponentDeckCards = [];
+        this.opponentDeckCards.push(card);
+      }
+    }
+    
+    return deckCards;
   }
 
   createUI() {
@@ -526,74 +594,40 @@ export default class GameScene extends Phaser.Scene {
   playShuffleDeckAnimation() {
     const { width, height } = this.cameras.main;
     
-    // Create deck position (bottom center)
-    const deckX = width / 2;
-    const deckY = height - 100;
+    // Get deck positions from layout
+    const playerDeckPos = this.layout.player.deck;
+    const opponentDeckPos = this.layout.opponent.deck;
     
-    // Create multiple card backs to simulate a deck
-    const deckCards = [];
-    const numCards = 8;
+    // Create player deck in initial position
+    const playerDeckCards = [];
+    const opponentDeckCards = [];
+    const numCards = 50;
     
+    // Create player deck cards in initial position
     for (let i = 0; i < numCards; i++) {
-      const card = this.add.image(deckX + (i * 2), deckY - (i * 1), 'card-back');
-      card.setScale(0.6);
+      const card = this.add.image(playerDeckPos.x + (i * 0), playerDeckPos.y - (i * 0), 'card-back');
+      const scaleX = GAME_CONFIG.card.width / card.width;
+      const scaleY = GAME_CONFIG.card.height / card.height;
+      card.setScale(Math.min(scaleX, scaleY) * 0.6);
       card.setDepth(i);
-      deckCards.push(card);
+      //card.setTint(0x4A90E2); // Blue tint for player
+      playerDeckCards.push(card);
     }
     
-    // Create shuffle animation
-    const shufflePromises = [];
-    
-    deckCards.forEach((card, index) => {
-      const delay = index * 100;
-      
-      // First movement - cards fly up and spread out
-      const shufflePromise = new Promise((resolve) => {
-        this.tweens.add({
-          targets: card,
-          x: deckX + (Math.random() - 0.5) * 200,
-          y: deckY - 100 - (Math.random() * 50),
-          rotation: (Math.random() - 0.5) * 0.5,
-          duration: 300,
-          delay: delay,
-          ease: 'Power2.easeOut',
-          onComplete: () => {
-            // Second movement - cards come back together
-            this.tweens.add({
-              targets: card,
-              x: deckX + (index * 2),
-              y: deckY - (index * 1),
-              rotation: 0,
-              duration: 400,
-              delay: 200,
-              ease: 'Power2.easeInOut',
-              onComplete: () => {
-                if (index === deckCards.length - 1) {
-                  // Animation complete, fade out deck and start game
-                  this.tweens.add({
-                    targets: deckCards,
-                    alpha: 0,
-                    duration: 300,
-                    delay: 500,
-                    onComplete: () => {
-                      deckCards.forEach(card => card.destroy());
-                      this.updateGameState();
-                      resolve();
-                    }
-                  });
-                }
-              }
-            });
-          }
-        });
-      });
-      
-      shufflePromises.push(shufflePromise);
-    });
+    // Create opponent deck cards in initial position
+    for (let i = 0; i < numCards; i++) {
+      const card = this.add.image(opponentDeckPos.x + (i * 0), opponentDeckPos.y - (i * 0), 'card-back');
+      const scaleX = GAME_CONFIG.card.width / card.width;
+      const scaleY = GAME_CONFIG.card.height / card.height;
+      card.setScale(Math.min(scaleX, scaleY) * 0.6);
+      card.setDepth(i);
+      //card.setTint(0xFF6B6B); // Red tint for opponent
+      opponentDeckCards.push(card);
+    }
     
     // Show shuffle text
-    const shuffleText = this.add.text(width / 2, height / 2, 'Shuffling Deck...', {
-      fontSize: '32px',
+    const shuffleText = this.add.text(width / 2, height / 2 - 120, 'Shuffling Decks...', {
+      fontSize: '28px',
       fontFamily: 'Arial Bold',
       fill: '#ffffff',
       align: 'center'
@@ -613,9 +647,261 @@ export default class GameScene extends Phaser.Scene {
       }
     });
     
-    // Add shuffle sound effect (if available)
-    if (this.sound.get('shuffle')) {
-      this.sound.play('shuffle');
+    // Start the new shuffle animation
+    setTimeout(() => {
+      this.performCustomShuffle(playerDeckCards, opponentDeckCards);
+    }, 500);
+  }
+
+  performCustomShuffle(playerDeckCards, opponentDeckCards) {
+    const { width, height } = this.cameras.main;
+    
+    // Game board center for card placement during shuffle
+    const boardCenterX = width / 2;
+    const boardCenterY = height / 2;
+    
+    // Track completion of both decks
+    let playerDeckComplete = false;
+    let opponentDeckComplete = false;
+    
+    const checkBothComplete = () => {
+      if (playerDeckComplete && opponentDeckComplete) {
+        // Both decks shuffled, move to final positions
+        this.moveDecksToFinalPositions(playerDeckCards, opponentDeckCards);
+      }
+    };
+    
+    // Start both deck shuffles simultaneously
+    this.shufflePlayerDeck(playerDeckCards, boardCenterX, boardCenterY, () => {
+      playerDeckComplete = true;
+      checkBothComplete();
+    });
+    
+    
+    this.shuffleOpponentDeck(opponentDeckCards, boardCenterX, boardCenterY, () => {
+      opponentDeckComplete = true;
+      checkBothComplete();
+    });
+  }
+
+  shufflePlayerDeck(deckCards, boardCenterX, boardCenterY, onComplete) {
+    const shuffledOrder = this.getCustomShuffleOrder(deckCards.length);
+    let currentCardIndex = 0;
+    const newStack = [];
+    
+    console.log('Player deck shuffling with custom method');
+    
+    const shuffleNextCard = () => {
+      if (currentCardIndex >= shuffledOrder.length) {
+        // Shuffle complete, move cards back to deck position
+        this.moveShuffledCardsToDeck(deckCards, this.layout.player.deck, onComplete);
+        return;
+      }
+      
+      const originalIndex = shuffledOrder[currentCardIndex];
+      const card = deckCards[originalIndex];
+      
+      this.applyCustomShuffleLogic(card, newStack, currentCardIndex, 'player', () => {
+        currentCardIndex++;
+        setTimeout(() => {
+          shuffleNextCard();
+        }, 100);
+      });
+    };
+    
+    // Start shuffling
+    shuffleNextCard();
+  }
+
+  shuffleOpponentDeck(deckCards, boardCenterX, boardCenterY, onComplete) {
+    const shuffledOrder = this.getCustomShuffleOrder(deckCards.length);
+    let currentCardIndex = 0;
+    const newStack = [];
+    
+    console.log('Opponent deck shuffling with custom method');
+    
+    const shuffleNextCard = () => {
+      if (currentCardIndex >= shuffledOrder.length) {
+        // Shuffle complete, move cards back to deck position
+        this.moveShuffledCardsToDeck(deckCards, this.layout.opponent.deck, onComplete);
+        return;
+      }
+      
+      const originalIndex = shuffledOrder[currentCardIndex];
+      const card = deckCards[originalIndex];
+      this.applyCustomShuffleLogic(card, newStack, currentCardIndex, 'opponent', () => {
+        currentCardIndex++;
+        setTimeout(() => {
+          shuffleNextCard();
+        }, 100);
+      });
+      
+    };
+    
+    // Start shuffling
+    shuffleNextCard();
+  }
+
+  applyCustomShuffleLogic(card, newStack, cardIndex, deckType, onComplete) {
+    const { width, height } = this.cameras.main;
+    const boardCenterX = width / 2;
+    let boardCenterY = height / 2;
+    
+    // Calculate horizontal positions for the new stack
+    const cardSpacing = 80; // Space between cards
+    const numberOfStacks = 5; // Total number of cards in deck
+    
+    // Different positions for player and opponent
+    let stackStartX;
+    if (deckType === 'player') {
+      // Player stack on the left side
+      stackStartX = boardCenterX  - ((numberOfStacks - 1) * cardSpacing) / 2;
+    } else {
+      // Opponent stack on the right side
+      stackStartX = boardCenterX  - ((numberOfStacks - 1) * cardSpacing) / 2;
     }
+
+    const startY = 45;
+    const cardHeight = 160;
+
+    if (deckType === 'player') {
+      boardCenterY = startY + 100+ cardHeight + 10+ 15 +cardHeight + 70;
+    } else {
+      boardCenterY = startY + 100+ cardHeight + 10+ 15;
+    }
+    // Custom shuffle method: After placing first 4 cards, 5th card goes on top
+    if (cardIndex < 4) {
+      // First 4 cards go to new stack in horizontal line
+      newStack.push(card);
+      const targetX = stackStartX + (cardIndex * cardSpacing);
+      const targetY = boardCenterY + 50; // Slightly below center
+      
+      this.tweens.add({
+        targets: card,
+        x: targetX,
+        y: targetY,
+        rotation: 0,
+        duration: 200,
+        ease: 'Power2.easeInOut',
+        onComplete: () => {
+          onComplete();
+        }
+      });
+    } else {
+      // 5th card and onwards go on top of the new stack positions
+      newStack.unshift(card); // Add to beginning (top) of stack
+      
+      // Calculate which position this card should go to
+      const positionIndex = (cardIndex - 4) % 4; // 5th card = 0, 6th card = 1, 7th card = 2, 8th card = 3
+      const targetX = stackStartX + (positionIndex * cardSpacing);
+      
+      // Calculate how many cards are already at this position to stack on top
+      const cardsAtThisPosition = Math.floor((cardIndex - 4) / 4) + 1; // Count cards at this position
+      const targetY = boardCenterY + 50 - (cardsAtThisPosition * 5); // Stack vertically with 5px spacing
+      
+      this.tweens.add({
+        targets: card,
+        x: targetX,
+        y: targetY,
+        rotation: 0,
+        duration: 200,
+        ease: 'Power2.easeInOut',
+        onComplete: () => {
+          onComplete();
+        }
+      });
+    }
+  }
+
+  moveShuffledCardsToDeck(deckCards, deckPosition, onComplete) {
+    // Move all cards back to their deck position
+    deckCards.forEach((card, index) => {
+      this.tweens.add({
+        targets: card,
+        x: deckPosition.x + (index * 1),
+        y: deckPosition.y - (index * 1),
+        rotation: 0,
+        duration: 400,
+        delay: index * 50,
+        ease: 'Power2.easeInOut',
+        onComplete: () => {
+          if (index === deckCards.length - 1) {
+            onComplete();
+          }
+        }
+      });
+    });
+  }
+
+  getCustomShuffleOrder(length) {
+    // Create a custom shuffle order based on your method
+    const order = Array.from({ length }, (_, i) => i);
+    
+    // Custom shuffle: take cards one by one from top to bottom, place first 4 in new stack, then 5th goes on top
+    const shuffledOrder = [];
+    const tempStack = [...order];
+    
+    while (tempStack.length > 0) {
+      // Take card from top (index 0) instead of random
+      const card = tempStack.splice(0, 1)[0];
+      shuffledOrder.push(card);
+    }
+    
+    return shuffledOrder;
+  }
+
+  moveDecksToFinalPositions(playerDeckCards, opponentDeckCards) {
+    // Fade out the temporary shuffle cards
+    this.tweens.add({
+      targets: playerDeckCards,
+      alpha: 0,
+      duration: 300,
+      delay: 500,
+      onComplete: () => {
+        playerDeckCards.forEach(card => card.destroy());
+      }
+    });
+    
+    this.tweens.add({
+      targets: opponentDeckCards,
+      alpha: 0,
+      duration: 300,
+      delay: 500,
+      onComplete: () => {
+        opponentDeckCards.forEach(card => card.destroy());
+        
+        // Show the permanent deck stacks
+        this.showDeckStacks();
+        
+        this.updateGameState();
+      }
+    });
+  }
+
+  showDeckStacks() {
+    // Show the permanent deck stacks with fade-in animation
+    this.playerDeckStack.forEach((card, index) => {
+      card.setVisible(true);
+      card.setAlpha(0);
+      this.tweens.add({
+        targets: card,
+        alpha: 0.8 - (index * 0.1),
+        duration: 300,
+        delay: index * 50,
+        ease: 'Power2.easeOut'
+      });
+    });
+    
+    this.opponentDeckStack.forEach((card, index) => {
+      card.setVisible(true);
+      card.setAlpha(0);
+      this.tweens.add({
+        targets: card,
+        alpha: 0.8 - (index * 0.1),
+        duration: 300,
+        delay: index * 50,
+        ease: 'Power2.easeOut'
+      });
+    });
   }
 }

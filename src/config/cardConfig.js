@@ -1,7 +1,7 @@
 export const CARD_CONFIG = {
   // Card Dimensions
   width: 120,
-  height: 180,
+  height: 160,
   
   // Card Margins and Spacing
   margin: 10,

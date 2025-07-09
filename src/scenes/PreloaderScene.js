@@ -48,28 +48,17 @@ export default class PreloaderScene extends Phaser.Scene {
   }
 
   loadAssets() {
+    // Load actual card back image
+    this.load.image('card-back', 'src/assets/cardBack.png');
+    
     // Create placeholder card textures
     this.createCardTextures();
     
     // Create UI textures
     this.createUITextures();
-    
-    // In a real implementation, you would load actual image files:
-    // this.load.image('card-back', 'assets/images/card-back.png');
-    // this.load.image('character-frame', 'assets/images/character-frame.png');
-    // etc.
   }
 
   createCardTextures() {
-    // Create card back texture
-    const cardBackGraphics = this.add.graphics();
-    cardBackGraphics.fillStyle(GAME_CONFIG.colors.cardBack);
-    cardBackGraphics.fillRoundedRect(0, 0, GAME_CONFIG.card.width, GAME_CONFIG.card.height, GAME_CONFIG.card.cornerRadius);
-    cardBackGraphics.lineStyle(2, 0x444444);
-    cardBackGraphics.strokeRoundedRect(0, 0, GAME_CONFIG.card.width, GAME_CONFIG.card.height, GAME_CONFIG.card.cornerRadius);
-    cardBackGraphics.generateTexture('card-back', GAME_CONFIG.card.width, GAME_CONFIG.card.height);
-    cardBackGraphics.destroy();
-
     // Create card frames for different types
     Object.entries(GAME_CONFIG.colors).forEach(([type, color]) => {
       if (['character', 'help', 'sp', 'leader'].includes(type)) {
@@ -88,9 +77,9 @@ export default class PreloaderScene extends Phaser.Scene {
     // Create zone placeholder
     const zoneGraphics = this.add.graphics();
     zoneGraphics.lineStyle(2, 0x666666, 1);
-    zoneGraphics.strokeRoundedRect(0, 0, GAME_CONFIG.card.width - 10, GAME_CONFIG.card.height - 20, GAME_CONFIG.card.cornerRadius);
-    zoneGraphics.setAlpha(0.8);
-    zoneGraphics.generateTexture('zone-placeholder', GAME_CONFIG.card.width - 10, GAME_CONFIG.card.height - 20);
+    zoneGraphics.strokeRoundedRect(0, 0, GAME_CONFIG.card.width - 10, GAME_CONFIG.card.height , GAME_CONFIG.card.cornerRadius);
+    zoneGraphics.setAlpha(1);
+    zoneGraphics.generateTexture('zone-placeholder', GAME_CONFIG.card.width - 10, GAME_CONFIG.card.height );
     zoneGraphics.destroy();
 
     // Create zone highlight
