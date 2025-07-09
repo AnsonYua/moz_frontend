@@ -24,7 +24,7 @@ export default class ShuffleAnimationManager {
       const card = this.scene.add.image(playerDeckPos.x + (i * 0), playerDeckPos.y - (i * 0), 'card-back');
       const scaleX = GAME_CONFIG.card.width / card.width;
       const scaleY = GAME_CONFIG.card.height / card.height;
-      card.setScale(Math.min(scaleX, scaleY) * 0.6);
+      card.setScale(Math.min(scaleX, scaleY) * 0.95);
       card.setDepth(i);
       this.playerDeckCards.push(card);
     }
@@ -34,7 +34,7 @@ export default class ShuffleAnimationManager {
       const card = this.scene.add.image(opponentDeckPos.x + (i * 0), opponentDeckPos.y - (i * 0), 'card-back');
       const scaleX = GAME_CONFIG.card.width / card.width;
       const scaleY = GAME_CONFIG.card.height / card.height;
-      card.setScale(Math.min(scaleX, scaleY) * 0.6);
+      card.setScale(Math.min(scaleX, scaleY) * 0.95);
       card.setDepth(i);
       this.opponentDeckCards.push(card);
     }
@@ -167,7 +167,7 @@ export default class ShuffleAnimationManager {
     let boardCenterY = height / 2;
     
     // Calculate horizontal positions for the new stack
-    const cardSpacing = 80; // Space between cards
+    const cardSpacing = 120; // Space between cards (increased to prevent overlap)
     const numberOfStacks = 5; // Total number of cards in deck
     
     // Different positions for player and opponent
@@ -192,7 +192,7 @@ export default class ShuffleAnimationManager {
     // Custom shuffle method: 5 columns × 2 rows layout
     const totalPositions = 10; // 5 columns × 2 rows
     const cardsPerRow = 5;
-    const rowSpacing = 100; // Vertical spacing between rows
+    const rowSpacing = 200; // Vertical spacing between rows (increased to prevent overlap)
     
     if (cardIndex < totalPositions) {
       // First 10 cards go to the grid layout
