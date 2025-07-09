@@ -51,6 +51,9 @@ export default class PreloaderScene extends Phaser.Scene {
     // Load actual card back image
     this.load.image('card-back', 'src/assets/cardBack.png');
     
+    // Load leader card back image
+    this.load.image('card-back-leader', 'src/assets/cardBackLeader.png');
+    
     // Create placeholder card textures
     this.createCardTextures();
     

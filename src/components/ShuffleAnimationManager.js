@@ -17,7 +17,7 @@ export default class ShuffleAnimationManager {
     // Create player deck in initial position
     this.playerDeckCards = [];
     this.opponentDeckCards = [];
-    const numCards = 50;
+    const numCards = 20;
     
     // Create player deck cards in initial position
     for (let i = 0; i < numCards; i++) {
@@ -291,26 +291,155 @@ export default class ShuffleAnimationManager {
   }
 
   moveDecksToFinalPositions(onComplete) {
-    // Fade out the temporary shuffle cards
-    this.scene.tweens.add({
-      targets: this.playerDeckCards,
-      alpha: 0,
-      duration: 300,
-      delay: 500,
-      onComplete: () => {
-        this.playerDeckCards.forEach(card => card.destroy());
+    // First, move leader cards to leader deck positions
+    this.moveLeaderCardsToLeaderDecks(() => {
+      // Then fade out the temporary shuffle cards
+      this.scene.tweens.add({
+        targets: this.playerDeckCards,
+        alpha: 0,
+        duration: 300,
+        delay: 500,
+        onComplete: () => {
+          this.playerDeckCards.forEach(card => card.destroy());
+        }
+      });
+      
+      this.scene.tweens.add({
+        targets: this.opponentDeckCards,
+        alpha: 0,
+        duration: 300,
+        delay: 500,
+        onComplete: () => {
+          this.opponentDeckCards.forEach(card => card.destroy());
+          onComplete();
+        }
+      });
+    });
+  }
+
+  moveLeaderCardsToLeaderDecks(onComplete) {
+    const layout = this.scene.layout;
+    const { width, height } = this.scene.cameras.main;
+    
+    // Create 5 leader cards for each player as separate decks
+    this.playerLeaderCards = [];
+    this.opponentLeaderCards = [];
+    
+    // Get leader deck positions
+    const playerLeaderDeckPos = layout.player.leaderDeck;
+    const opponentLeaderDeckPos = layout.opponent.leaderDeck;
+    
+    // Create player leader cards starting from bottom of screen (separate deck)
+    const playerStartY = height + 100; // Start below screen
+    for (let i = 0; i < 5; i++) {
+      const cardContainer = this.createLeaderCardWithRoundedCorners(playerLeaderDeckPos.x, playerStartY);
+      cardContainer.setDepth(1000 + i);
+      this.playerLeaderCards.push(cardContainer);
+    }
+    
+    // Create opponent leader cards starting from top of screen (separate deck)
+    const opponentStartY = -100; // Start above screen
+    for (let i = 0; i < 5; i++) {
+      const cardContainer = this.createLeaderCardWithRoundedCorners(opponentLeaderDeckPos.x, opponentStartY);
+      cardContainer.setDepth(1000 + i);
+      this.opponentLeaderCards.push(cardContainer);
+    }
+    
+    // Animation completion tracking
+    let completedAnimations = 0;
+    const totalAnimations = 10; // 5 player + 5 opponent
+    
+    const checkComplete = () => {
+      completedAnimations++;
+      if (completedAnimations >= totalAnimations) {
+        onComplete();
+      }
+    };
+
+    
+    const totalLeaderCards = this.playerLeaderCards.length 
+    // Animate player leader cards from bottom to top (upward slide)
+    this.playerLeaderCards.forEach((card, index) => {
+      card.setDepth(totalLeaderCards-index);
+      const targetX = playerLeaderDeckPos.x;
+      const targetY = playerLeaderDeckPos.y - (-index * 30);
+      
+      this.scene.tweens.add({
+        targets: card,
+        x: targetX,
+        y: targetY,
+        duration: 800,
+        delay: index * 70,
+        ease: 'Power2.easeOut',
+        onComplete: checkComplete
+      });
+      
+      // Also animate the border if it exists
+      if (card.borderGraphics) {
+        this.scene.tweens.add({
+          targets: card.borderGraphics,
+          x: targetX,
+          y: targetY,
+          duration: 800,
+          delay: index * 70,
+          ease: 'Power2.easeOut'
+        });
       }
     });
     
-    this.scene.tweens.add({
-      targets: this.opponentDeckCards,
-      alpha: 0,
-      duration: 300,
-      delay: 500,
-      onComplete: () => {
-        this.opponentDeckCards.forEach(card => card.destroy());
-        onComplete();
+    // Animate opponent leader cards from top to bottom (downward slide)
+    this.opponentLeaderCards.forEach((card, index) => {
+      card.setDepth(totalLeaderCards-index);
+      const targetX = opponentLeaderDeckPos.x;
+      const targetY = opponentLeaderDeckPos.y - (index * 30);
+      
+      this.scene.tweens.add({
+        targets: card,
+        x: targetX,
+        y: targetY,
+        duration: 800,
+        delay: index * 70,
+        ease: 'Power2.easeOut',
+        onComplete: checkComplete
+      });
+      
+      // Also animate the border if it exists
+      if (card.borderGraphics) {
+        this.scene.tweens.add({
+          targets: card.borderGraphics,
+          x: targetX,
+          y: targetY,
+          duration: 800,
+          delay: index * 70,
+          ease: 'Power2.easeOut'
+        });
       }
     });
+  }
+
+  createLeaderCardWithRoundedCorners(x, y) {
+    // Create the leader card image directly
+    const leaderCard = this.scene.add.image(x, y, 'card-back-leader');
+    const scaleX = GAME_CONFIG.card.width / leaderCard.width;
+    const scaleY = GAME_CONFIG.card.height / leaderCard.height;
+    leaderCard.setScale(Math.min(scaleX, scaleY) * 0.95);
+    leaderCard.setRotation(Math.PI / 2); // Rotate 90 degrees (horizontal)
+    
+    // Create rounded border overlay to simulate rounded corners
+    const borderGraphics = this.scene.add.graphics();
+    borderGraphics.lineStyle(3, GAME_CONFIG.colors.cardBack, 1);
+    borderGraphics.strokeRoundedRect(
+      x - (GAME_CONFIG.card.width * 0.95) / 2, 
+      y - (GAME_CONFIG.card.height * 0.95) / 2, 
+      GAME_CONFIG.card.width * 0.95, 
+      GAME_CONFIG.card.height * 0.95, 
+      GAME_CONFIG.card.cornerRadius
+    );
+    borderGraphics.setRotation(Math.PI / 2); // Rotate border to match card
+    
+    // Store border reference for animation
+    leaderCard.borderGraphics = borderGraphics;
+    
+    return leaderCard;
   }
 }

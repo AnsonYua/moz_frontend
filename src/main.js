@@ -13,6 +13,11 @@ const config = {
   height: GAME_CONFIG.height,
   parent: 'game-container',
   backgroundColor: GAME_CONFIG.colors.background,
+  render: {
+    pixelArt: false,
+    antialias: true,
+    roundPixels: true
+  },
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,

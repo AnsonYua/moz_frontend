@@ -242,15 +242,20 @@ export default class GameScene extends Phaser.Scene {
     const deckCards = [];
     
     for (let i = 0; i < numCards; i++) {
-      const card = this.add.image(x + (i * stackOffset), y - (i * stackOffset), 'card-back');
+      // Ensure pixel-perfect positioning
+      const cardX = Math.round(x + (i * stackOffset));
+      const cardY = Math.round(y - (i * stackOffset));
+      const card = this.add.image(cardX, cardY, 'card-back');
       
       // Scale card to match our card config dimensions
       const scaleX = GAME_CONFIG.card.width / card.width;
       const scaleY = GAME_CONFIG.card.height / card.height;
-      card.setScale(Math.min(scaleX, scaleY) * 0.95); // Match shuffle animation scale
+      const scale = Math.min(scaleX, scaleY) * 0.95;
+      card.setScale(scale);
       
+      // Ensure crisp rendering
       card.setDepth(i);
-      card.setAlpha(0.8 - (i * 0.1)); // Fade cards as they go deeper in stack
+      card.setOrigin(0.5, 0.5); // Center origin for crisp rendering
       
       deckCards.push(card);
       
@@ -598,8 +603,10 @@ export default class GameScene extends Phaser.Scene {
 
   playShuffleDeckAnimation() {
     this.shuffleAnimationManager.playShuffleDeckAnimation(this.layout, () => {
-      // Show the permanent deck stacks
-      this.showDeckStacks();
+      // Delay showing deck stacks to avoid flash
+      setTimeout(() => {
+        this.showDeckStacks();
+      }, 100);
       
       // Update game state after shuffle animation completes
       this.updateGameState();
@@ -608,13 +615,13 @@ export default class GameScene extends Phaser.Scene {
 
 
   showDeckStacks() {
-    // Show the permanent deck stacks with fade-in animation
+    // Show the permanent deck stacks with smooth fade-in animation
     this.playerDeckStack.forEach((card, index) => {
       card.setVisible(true);
       card.setAlpha(0);
       this.tweens.add({
         targets: card,
-        alpha: 0.8 - (index * 0.1),
+        alpha: 1, // Full opacity for crisp rendering
         duration: 300,
         delay: index * 50,
         ease: 'Power2.easeOut'
@@ -626,7 +633,7 @@ export default class GameScene extends Phaser.Scene {
       card.setAlpha(0);
       this.tweens.add({
         targets: card,
-        alpha: 0.8 - (index * 0.1),
+        alpha: 1, // Full opacity for crisp rendering
         duration: 300,
         delay: index * 50,
         ease: 'Power2.easeOut'
