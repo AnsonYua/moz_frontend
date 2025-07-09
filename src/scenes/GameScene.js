@@ -247,7 +247,7 @@ export default class GameScene extends Phaser.Scene {
       // Scale card to match our card config dimensions
       const scaleX = GAME_CONFIG.card.width / card.width;
       const scaleY = GAME_CONFIG.card.height / card.height;
-      card.setScale(Math.min(scaleX, scaleY) * 0.6); // Scale down for deck stack
+      card.setScale(Math.min(scaleX, scaleY) * 0.95); // Match shuffle animation scale
       
       card.setDepth(i);
       card.setAlpha(0.8 - (i * 0.1)); // Fade cards as they go deeper in stack
