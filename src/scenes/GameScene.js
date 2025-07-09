@@ -767,14 +767,23 @@ export default class GameScene extends Phaser.Scene {
     if (deckType === 'player') {
       boardCenterY = startY + 100+ cardHeight + 10+ 15 +cardHeight + 70;
     } else {
-      boardCenterY = startY + 100+ cardHeight + 10+ 15;
+      boardCenterY = startY + 100 + 10+ 15;
     }
-    // Custom shuffle method: After placing first 4 cards, 5th card goes on top
-    if (cardIndex < 4) {
-      // First 4 cards go to new stack in horizontal line
+    // Custom shuffle method: 5 columns × 2 rows layout
+    const totalPositions = 10; // 5 columns × 2 rows
+    const cardsPerRow = 5;
+    const rowSpacing = 100; // Vertical spacing between rows
+    
+    if (cardIndex < totalPositions) {
+      // First 10 cards go to the grid layout
       newStack.push(card);
-      const targetX = stackStartX + (cardIndex * cardSpacing);
-      const targetY = boardCenterY + 50; // Slightly below center
+      
+      // Calculate row and column position
+      const row = Math.floor(cardIndex / cardsPerRow); // 0 or 1
+      const col = cardIndex % cardsPerRow; // 0, 1, 2, 3, or 4
+      
+      const targetX = stackStartX + (col * cardSpacing);
+      const targetY = boardCenterY + 50 + (row * rowSpacing);
       
       this.tweens.add({
         targets: card,
@@ -788,16 +797,19 @@ export default class GameScene extends Phaser.Scene {
         }
       });
     } else {
-      // 5th card and onwards go on top of the new stack positions
+      // 11th card onwards go on top of the grid positions
       newStack.unshift(card); // Add to beginning (top) of stack
       
       // Calculate which position this card should go to
-      const positionIndex = (cardIndex - 4) % 4; // 5th card = 0, 6th card = 1, 7th card = 2, 8th card = 3
-      const targetX = stackStartX + (positionIndex * cardSpacing);
+      const positionIndex = (cardIndex - totalPositions) % totalPositions; // 0-9 for grid positions
+      const row = Math.floor(positionIndex / cardsPerRow); // 0 or 1
+      const col = positionIndex % cardsPerRow; // 0, 1, 2, 3, or 4
+      
+      const targetX = stackStartX + (col * cardSpacing);
       
       // Calculate how many cards are already at this position to stack on top
-      const cardsAtThisPosition = Math.floor((cardIndex - 4) / 4) + 1; // Count cards at this position
-      const targetY = boardCenterY + 50 - (cardsAtThisPosition * 5); // Stack vertically with 5px spacing
+      const cardsAtThisPosition = Math.floor((cardIndex - totalPositions) / totalPositions) + 1;
+      const targetY = boardCenterY + 50 + (row * rowSpacing) - (cardsAtThisPosition * 5); // Stack vertically
       
       this.tweens.add({
         targets: card,
@@ -814,12 +826,15 @@ export default class GameScene extends Phaser.Scene {
   }
 
   moveShuffledCardsToDeck(deckCards, deckPosition, onComplete) {
-    // Move all cards back to their deck position
+    // Move all cards back to their deck position from top to bottom
     deckCards.forEach((card, index) => {
+      // Reverse the order: last card goes to bottom, first card goes to top
+      const reverseIndex = deckCards.length - 1 - index;
+      
       this.tweens.add({
         targets: card,
-        x: deckPosition.x + (index * 1),
-        y: deckPosition.y - (index * 1),
+        x: deckPosition.x + (reverseIndex * 1),
+        y: deckPosition.y - (reverseIndex * 1),
         rotation: 0,
         duration: 400,
         delay: index * 50,
