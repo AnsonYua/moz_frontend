@@ -1,3 +1,5 @@
+import { CARD_CONFIG } from './cardConfig.js';
+
 export const GAME_CONFIG = {
   width: 1920,
   height: 1080,
@@ -12,6 +14,9 @@ export const GAME_CONFIG = {
   maxHandSize: 7,
   totalRounds: 4,
   initialVictoryPoints: 0,
+  
+  // Card Configuration
+  card: CARD_CONFIG,
   
   // Card Types
   cardTypes: {

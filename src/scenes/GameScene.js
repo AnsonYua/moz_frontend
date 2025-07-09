@@ -37,40 +37,43 @@ export default class GameScene extends Phaser.Scene {
     // Add table texture
     const tableGraphics = this.add.graphics();
     tableGraphics.fillStyle(0x2d5016);
-    tableGraphics.fillRoundedRect(50, 100, width - 100, height - 200, 20);
+    tableGraphics.fillRoundedRect(50, 50, width - 100, height - 140, 20);
     tableGraphics.lineStyle(4, 0x8b4513);
-    tableGraphics.strokeRoundedRect(50, 100, width - 100, height - 200, 20);
+    tableGraphics.strokeRoundedRect(50, 50, width - 100, height - 140, 20);
   }
 
   createGameBoard() {
     const { width, height } = this.cameras.main;
-    
+    // card size 130x190
     // Define layout positions
+
+    const startY = 45;
+    const cardHeight = 160;
     this.layout = {
       // Opponent zones (top area)
       opponent: {
-        top: { x: width * 0.25, y: height * 0.25 },
-        left: { x: width * 0.35, y: height * 0.25 },
-        right: { x: width * 0.45, y: height * 0.25 },
-        help: { x: width * 0.55, y: height * 0.25 },
-        sp: { x: width * 0.15, y: height * 0.4 }
+        top: { x: width * 0.5, y:  startY + 100+ cardHeight + 10+ 15},
+        left: { x:width * 0.5- 130- 50, y:  startY + 100+ cardHeight + 10+ 15},
+        right: { x: width * 0.5 + 130 +  50, y:  startY + 100+ cardHeight + 10+ 15},
+        help: { x: width * 0.5- 130- 50, y: startY + 100+ 0},
+        sp: { x:  width * 0.5 + 130 +  50, y: startY + 100+ 0}
       },
       // Player zones (bottom area)
       player: {
-        top: { x: width * 0.25, y: height * 0.65 },
-        left: { x: width * 0.35, y: height * 0.65 },
-        right: { x: width * 0.45, y: height * 0.65 },
-        help: { x: width * 0.55, y: height * 0.65 },
-        sp: { x: width * 0.15, y: height * 0.55 }
+        top: { x: width * 0.5, y: startY + 100+ cardHeight + 10+ 15 +cardHeight + 70},
+        left: { x: width * 0.5- 130- 50, y: startY + 100+ cardHeight + 10+ 15 +cardHeight + 70},
+        right: { x: width * 0.5 + 130 +  50, y: startY + 100+ cardHeight + 10+ 15 +cardHeight + 70 },
+        help: { x: width * 0.5- 130- 50, y: startY + 100+ cardHeight + 10+ 15 +cardHeight + 70 + cardHeight +30 },
+        sp: { x: width * 0.5 + 130 +  50,y: startY + 100+ cardHeight + 10+ 15 +cardHeight + 70 + cardHeight +30 }
       },
       // Battle area (center)
-      battle: { x: width * 0.5, y: height * 0.45 },
+      //battle: { x: width * 0.5, y: height * 0.45 },
       // Hand area (bottom)
       hand: { x: width * 0.5, y: height * 0.85 }
     };
     
     this.createZones();
-    this.createBattleArea();
+    //this.createBattleArea();
   }
 
   createZones() {
@@ -97,7 +100,7 @@ export default class GameScene extends Phaser.Scene {
     const placeholder = this.add.image(x, y, 'zone-placeholder');
     
     // Zone label
-    const label = this.add.text(x, y + 110, type.toUpperCase(), {
+    const label = this.add.text(x, y + 95, type.toUpperCase(), {
       fontSize: '12px',
       fontFamily: 'Arial',
       fill: '#ffffff',
@@ -173,6 +176,7 @@ export default class GameScene extends Phaser.Scene {
     const { width } = this.cameras.main;
     
     // Opponent area label
+    /*
     this.add.text(width * 0.4, this.layout.opponent.top.y - 120, 'OPPONENT ZONES', {
       fontSize: '16px',
       fontFamily: 'Arial Bold',
@@ -187,6 +191,7 @@ export default class GameScene extends Phaser.Scene {
       fill: '#ffffff',
       align: 'center'
     }).setOrigin(0.5);
+    */
   }
 
   createUI() {
@@ -196,10 +201,10 @@ export default class GameScene extends Phaser.Scene {
     this.createTopUI();
     
     // Phase indicator
-    this.phaseText = this.add.text(width / 2, 50, 'MAIN PHASE', {
-      fontSize: '24px',
+    this.phaseText = this.add.text(width / 2, 35, 'MAIN PHASE', {
+      fontSize: '20px',
       fontFamily: 'Arial Bold',
-      fill: GAME_CONFIG.colors.highlight,
+      fill: '#ffffff',
       align: 'center'
     });
     this.phaseText.setOrigin(0.5);
@@ -216,8 +221,8 @@ export default class GameScene extends Phaser.Scene {
     
     // Create UI background
     const uiBg = this.add.graphics();
-    uiBg.fillStyle(0x000000, 0.7);
-    uiBg.fillRect(0, 0, width, 100);
+    uiBg.fillStyle(0x000000, 0.5);
+    uiBg.fillRect(0, 0, width, 50);
     
     // Player info (left side)
     const gameState = this.gameStateManager.getGameState();
@@ -225,40 +230,40 @@ export default class GameScene extends Phaser.Scene {
     const opponent = this.gameStateManager.getOpponent();
     const opponentData = this.gameStateManager.getPlayer(opponent);
     
-    this.playerInfoText = this.add.text(50, 25, `You: ${gameState.playerName}`, {
+    this.playerInfoText = this.add.text(50, 5, `You: ${gameState.playerName}`, {
       fontSize: '16px',
       fontFamily: 'Arial',
       fill: '#ffffff'
     });
     
-    this.playerVPText = this.add.text(50, 50, `VP: ${this.gameStateManager.getVictoryPoints()}`, {
+    this.playerVPText = this.add.text(-100, 30, `VP: ${this.gameStateManager.getVictoryPoints()}`, {
       fontSize: '14px',
       fontFamily: 'Arial',
       fill: '#4CAF50'
     });
     
-    this.playerHandText = this.add.text(50, 70, `Hand: ${player ? player.hand.length : 0}`, {
+    this.playerHandText = this.add.text(-100, 50, `Hand: ${player ? player.hand.length : 0}`, {
       fontSize: '14px',
       fontFamily: 'Arial',
       fill: '#ffffff'
     });
     
     // Opponent info (right side)
-    this.opponentInfoText = this.add.text(width - 50, 25, `Opponent: ${opponentData ? opponentData.name : 'Unknown'}`, {
+    this.opponentInfoText = this.add.text(width - 50, 5, `Opponent: ${opponentData ? opponentData.name : 'Unknown'}`, {
       fontSize: '16px',
       fontFamily: 'Arial',
       fill: '#ffffff'
     });
     this.opponentInfoText.setOrigin(1, 0);
     
-    this.opponentVPText = this.add.text(width - 50, 50, `VP: ${this.gameStateManager.getVictoryPoints(opponent)}`, {
+    this.opponentVPText = this.add.text(width +1000, 30, `VP: ${this.gameStateManager.getVictoryPoints(opponent)}`, {
       fontSize: '14px',
       fontFamily: 'Arial',
       fill: '#FF5722'
     });
     this.opponentVPText.setOrigin(1, 0);
     
-    this.opponentHandText = this.add.text(width - 50, 70, `Hand: ${opponentData ? opponentData.hand.length : 0}`, {
+    this.opponentHandText = this.add.text(width+1000, 50, `Hand: ${opponentData ? opponentData.hand.length : 0}`, {
       fontSize: '14px',
       fontFamily: 'Arial',
       fill: '#ffffff'
@@ -266,10 +271,10 @@ export default class GameScene extends Phaser.Scene {
     this.opponentHandText.setOrigin(1, 0);
     
     // Round info (center)
-    this.roundText = this.add.text(width / 2, 30, `Round ${this.gameStateManager.getCurrentRound()} / 4`, {
+    this.roundText = this.add.text(width / 2, 15, `Round ${this.gameStateManager.getCurrentRound()} / 4`, {
       fontSize: '18px',
       fontFamily: 'Arial Bold',
-      fill: GAME_CONFIG.colors.highlight,
+      fill: '#ffffff',
       align: 'center'
     });
     this.roundText.setOrigin(0.5);
@@ -312,17 +317,19 @@ export default class GameScene extends Phaser.Scene {
     
     // Hand background
     const handBg = this.add.graphics();
-    handBg.fillStyle(0x000000, 0.5);
+    handBg.fillStyle(0x000000, 0);
+    //fillRoundedRect(x, y, width, height, [radius])
     handBg.fillRoundedRect(50, height - 220, width - 100, 170, 10);
     
     // Hand label
+    /*
     this.add.text(width / 2, height - 210, 'YOUR HAND', {
       fontSize: '14px',
       fontFamily: 'Arial Bold',
       fill: '#ffffff',
       align: 'center'
     }).setOrigin(0.5);
-    
+    */
     this.handContainer = this.add.container(width / 2, height - 120);
   }
 
