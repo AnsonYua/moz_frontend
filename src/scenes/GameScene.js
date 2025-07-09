@@ -647,6 +647,13 @@ export default class GameScene extends Phaser.Scene {
       }
     });
     
+    // Bring cards to front layer before starting animation
+    playerDeckCards.forEach(card => card.setDepth(1000));
+    for (let i = 0; i < playerDeckCards.length; i++) {
+      playerDeckCards[i].setDepth(playerDeckCards.length-i);
+    }
+    //opponentDeckCards.forEach(card => card.setDepth(1000));
+    
     // Start the new shuffle animation
     setTimeout(() => {
       this.performCustomShuffle(playerDeckCards, opponentDeckCards);
@@ -700,6 +707,7 @@ export default class GameScene extends Phaser.Scene {
       
       const originalIndex = shuffledOrder[currentCardIndex];
       const card = deckCards[originalIndex];
+      card.setDepth(currentCardIndex);
       
       this.applyCustomShuffleLogic(card, newStack, currentCardIndex, 'player', () => {
         currentCardIndex++;
@@ -746,6 +754,8 @@ export default class GameScene extends Phaser.Scene {
     const { width, height } = this.cameras.main;
     const boardCenterX = width / 2;
     let boardCenterY = height / 2;
+
+    
     
     // Calculate horizontal positions for the new stack
     const cardSpacing = 80; // Space between cards
@@ -826,25 +836,31 @@ export default class GameScene extends Phaser.Scene {
   }
 
   moveShuffledCardsToDeck(deckCards, deckPosition, onComplete) {
-    // Move all cards back to their deck position from top to bottom
+    // Move all cards back to their deck position - top cards move first
+    deckCards.reverse();
     deckCards.forEach((card, index) => {
-      // Reverse the order: last card goes to bottom, first card goes to top
-      const reverseIndex = deckCards.length - 1 - index;
+      // First cards to move (index 0) should be on top of deck
       
       this.tweens.add({
         targets: card,
-        x: deckPosition.x + (reverseIndex * 1),
-        y: deckPosition.y - (reverseIndex * 1),
+        x: deckPosition.x ,
+        y: deckPosition.y ,
         rotation: 0,
         duration: 400,
         delay: index * 50,
         ease: 'Power2.easeInOut',
+        onStart: () => {
+          setTimeout(() => {
+            card.setDepth(index);
+          }, 350);
+        },
         onComplete: () => {
           if (index === deckCards.length - 1) {
             onComplete();
           }
         }
       });
+    
     });
   }
 
