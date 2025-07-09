@@ -192,7 +192,7 @@ export default class ShuffleAnimationManager {
     // Custom shuffle method: 5 columns × 2 rows layout
     const totalPositions = 10; // 5 columns × 2 rows
     const cardsPerRow = 5;
-    const rowSpacing = 200; // Vertical spacing between rows (increased to prevent overlap)
+    const rowSpacing = 170; // Vertical spacing between rows
     
     if (cardIndex < totalPositions) {
       // First 10 cards go to the grid layout
