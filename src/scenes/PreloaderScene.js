@@ -22,6 +22,11 @@ export default class PreloaderScene extends Phaser.Scene {
     });
 
     this.load.on('complete', () => {
+      // Set better texture filtering for all loaded textures
+      this.textures.each((texture) => {
+        texture.setFilter(Phaser.Textures.FilterMode.LINEAR);
+      });
+      
       this.progressBar.destroy();
       this.progressBox.destroy();
       this.loadingText.destroy();
@@ -54,11 +59,36 @@ export default class PreloaderScene extends Phaser.Scene {
     // Load leader card back image
     this.load.image('card-back-leader', 'src/assets/cardBackLeader.png');
     
+    // Load all card images
+    this.loadCardImages();
+    
     // Create placeholder card textures
     this.createCardTextures();
     
     // Create UI textures
     this.createUITextures();
+  }
+
+  loadCardImages() {
+    // Load character cards (c-1 to c-28)
+    for (let i = 1; i <= 28; i++) {
+      this.load.image(`c-${i}`, `src/assets/character/c-${i}.png`);
+    }
+    
+    // Load leader cards (s-1 to s-6) 
+    for (let i = 1; i <= 6; i++) {
+      this.load.image(`s-${i}`, `src/assets/leader/s-${i}.png`);
+    }
+    
+    // Load help cards (h-1 to h-15)
+    for (let i = 1; i <= 15; i++) {
+      this.load.image(`h-${i}`, `src/assets/utilityCard/h-${i}.png`);
+    }
+    
+    // Load SP cards (sp-1 to sp-10)
+    for (let i = 1; i <= 10; i++) {
+      this.load.image(`sp-${i}`, `src/assets/utilityCard/sp-${i}.png`);
+    }
   }
 
   createCardTextures() {

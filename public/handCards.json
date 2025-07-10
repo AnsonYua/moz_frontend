@@ -1,0 +1,61 @@
+{
+  "success": true,
+  "data": {
+    "playerId": "player-1",
+    "handCards": [
+      {
+        "id": "c-1",
+        "name": "Revolutionary Leader",
+        "type": "character",
+        "power": 8,
+        "zones": ["top", "left", "right"],
+        "image": "src/assets/character/c-1.png"
+      },
+      {
+        "id": "c-5",
+        "name": "Street Organizer", 
+        "type": "character",
+        "power": 7,
+        "zones": ["left", "right"],
+        "image": "src/assets/character/c-5.png"
+      },
+      {
+        "id": "h-2",
+        "name": "Underground Network",
+        "type": "help",
+        "effect": "Draw 2 additional cards",
+        "image": "src/assets/utilityCard/h-2.png"
+      },
+      {
+        "id": "c-12",
+        "name": "Underground Journalist",
+        "type": "character", 
+        "power": 3,
+        "zones": ["top"],
+        "image": "src/assets/character/c-12.png"
+      },
+      {
+        "id": "sp-1",
+        "name": "Revolutionary Uprising",
+        "type": "sp",
+        "effect": "All characters gain +3 power",
+        "image": "src/assets/utilityCard/sp-1.png"
+      },
+      {
+        "id": "c-18",
+        "name": "Technology Hacker",
+        "type": "character",
+        "power": 3,
+        "zones": ["top"],
+        "image": "src/assets/character/c-18.png"
+      },
+      {
+        "id": "h-7",
+        "name": "Resistance Training",
+        "type": "help",
+        "effect": "Characters gain +1 power permanently",
+        "image": "src/assets/utilityCard/h-7.png"
+      }
+    ]
+  }
+}

@@ -25,13 +25,32 @@ export default class Card extends Phaser.GameObjects.Container {
   }
 
   create() {
-    // Card background/frame
-    const frameKey = this.options.faceDown ? 'card-back' : `${this.cardData.type}-frame`;
-    this.cardFrame = this.scene.add.image(0, 0, frameKey);
-    this.add(this.cardFrame);
+    if (this.options.faceDown) {
+      // Show card back when face down
+      this.cardImage = this.scene.add.image(0, 0, 'card-back');
+      this.add(this.cardImage);
+    } else {
+      // Show actual card image when face up
+      const cardKey = this.cardData.id; // Use card ID as texture key (e.g., "c-1", "h-2", "sp-1")
+      this.cardImage = this.scene.add.image(0, 0, cardKey);
+      this.add(this.cardImage);
+      
+      // Card images already contain all the necessary information
+      // Text overlays are not needed when using actual card artwork
+      // if (this.cardData) {
+      //   this.createCardContent();
+      // }
+    }
     
-    if (!this.options.faceDown && this.cardData) {
-      this.createCardContent();
+    // Scale card image to match game config dimensions with better filtering
+    if (this.cardImage) {
+      const scaleX = GAME_CONFIG.card.width / this.cardImage.width;
+      const scaleY = GAME_CONFIG.card.height / this.cardImage.height;
+      const scale = Math.min(scaleX, scaleY);
+      this.cardImage.setScale(scale);
+      
+      // Set texture filtering for better quality when scaling
+      this.cardImage.texture.setFilter(Phaser.Textures.FilterMode.LINEAR);
     }
     
     this.setScale(this.options.scale);
@@ -134,7 +153,7 @@ export default class Card extends Phaser.GameObjects.Container {
         });
         
         this.scene.game.canvas.style.cursor = 'pointer';
-        this.emit('card-hover', this);
+        this.scene.events.emit('card-hover', this);
       }
     });
 
@@ -150,7 +169,7 @@ export default class Card extends Phaser.GameObjects.Container {
       }
       
       this.scene.game.canvas.style.cursor = 'default';
-      this.emit('card-unhover', this);
+      this.scene.events.emit('card-unhover', this);
     });
 
     // Click/tap interaction

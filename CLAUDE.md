@@ -47,11 +47,12 @@ The game uses Phaser 3 scenes with state management integration:
 ```
 src/
 ├── scenes/           # Phaser scene classes (6 total)
-├── components/       # Reusable UI components (Card.js)
-├── managers/         # Game state and API managers
+├── components/       # Reusable UI components (Card.js, ShuffleAnimationManager.js)
+├── managers/         # Game state and API managers (GameStateManager.js, APIManager.js)
 ├── config/          # Game configuration (gameConfig.js, cardConfig.js)
-├── assets/          # Images, audio, fonts (minimal - cardBack.png)
-├── utils/           # Helper functions and utilities (empty)
+├── assets/          # Images and card artwork (organized by type: character/, leader/, utilityCard/)
+├── mock/            # Mock data for demo mode (handCards.json)
+├── utils/           # Helper functions and utilities (currently empty)
 └── main.js          # Application entry point with Phaser config
 ```
 
@@ -129,9 +130,10 @@ gameState = {
 - **Event Types**: 30+ different event types (GAME_STARTED, CARD_PLAYED, BATTLE_CALCULATED, etc.)
 
 ### Demo Mode
-- **Mock Data**: Complete demo functionality without backend
-- **Sample Cards**: Full card database for testing
+- **Mock Data**: Complete demo functionality without backend (uses `src/mock/handCards.json`)
+- **Sample Cards**: Full card database for testing (28 characters, 15 help cards, 10 SP cards, 6 leaders)
 - **Game Flow**: Test complete game flow from start to finish
+- **Connection Testing**: API connection testing with graceful fallback to demo mode
 
 ## Game Mechanics Implementation
 
@@ -169,10 +171,11 @@ gameState = {
 - **Object Pooling**: Reuse card objects where possible
 
 ### Animation System
-- **Shuffle Animation**: Complex deck shuffling with custom grid layout (5x2 grid)
+- **Shuffle Animation**: Complex deck shuffling with custom grid layout (5x2 grid) - managed by `ShuffleAnimationManager.js`
 - **Card Transitions**: Smooth drag-and-drop with spring physics
 - **Visual Feedback**: Highlight zones, card hover effects, battle animations
 - **Tween Chains**: Sequential animations for complex effects
+- **Hardware Acceleration**: Uses Phaser's built-in tween system for optimal performance
 
 ### Error Handling
 - **Network Resilience**: Handles API failures gracefully
@@ -205,10 +208,11 @@ gameState = {
 - **Configuration-Driven**: All game constants in `gameConfig.js` and `cardConfig.js`
 
 ### Animation Development
-- **Shuffle Animation**: Located in `GameScene.playShuffleDeckAnimation()`
+- **Shuffle Animation**: Located in `GameScene.playShuffleDeckAnimation()` using `ShuffleAnimationManager.js`
 - **Custom Shuffle Logic**: 5x2 grid layout with stacking for extra cards
 - **Tween Chains**: Use Phaser tweens for smooth transitions
 - **Visual Effects**: Fade-in/fade-out, rotation, scaling effects
+- **Component Architecture**: Separate animation managers for complex effects
 
 ### State Management Patterns
 - **Centralized State**: GameStateManager handles all game state
@@ -221,3 +225,29 @@ gameState = {
 - **Animation Optimization**: Use hardware acceleration, limit concurrent animations
 - **Asset Loading**: Efficient texture management and reuse
 - **Update Loops**: Minimize calculations in update loops
+
+## Critical Development Patterns
+
+### Component Design
+- **Card Component**: Extends `Phaser.GameObjects.Container` with full interaction system
+- **State Management**: Cards maintain their own state (selected, dragging, faceDown, etc.)
+- **Event System**: Uses Phaser events for component communication
+- **Lifecycle Management**: Proper cleanup of event listeners and tweens
+
+### API Integration Patterns
+- **Graceful Degradation**: Falls back to demo mode when API unavailable
+- **Connection Testing**: `APIManager.testConnection()` checks backend availability
+- **Mock Integration**: Complete mock API methods for development (`createMockGame`, `getMockPlayer`)
+- **Error Handling**: Comprehensive error handling with user-friendly messages
+
+### Asset Management
+- **Organized Structure**: Assets organized by type (character/, leader/, utilityCard/)
+- **Texture Creation**: Dynamic texture generation in PreloaderScene
+- **Memory Efficiency**: Reuse textures and cleanup unused assets
+- **Loading Strategy**: Progressive loading with visual feedback
+
+### Development Workflow Tips
+- **Demo-First**: Always test in demo mode before backend integration
+- **Scene Debugging**: Use `this.scene.get('SceneName')` for cross-scene communication
+- **State Inspection**: GameStateManager provides complete state visibility
+- **Performance Monitoring**: Watch for memory leaks in drag-and-drop operations

@@ -14,6 +14,8 @@ export default class GameScene extends Phaser.Scene {
     this.selectedCard = null;
     this.draggedCard = null;
     this.shuffleAnimationManager = null;
+    this.cardPreviewZone = null;
+    this.previewCard = null;
   }
 
   init(data) {
@@ -21,12 +23,18 @@ export default class GameScene extends Phaser.Scene {
     this.gameStateManager = data.gameStateManager;
   }
 
-  create() {
+  async create() {
     console.log('GameScene create method called');
     this.createBackground();
     this.createGameBoard();
     this.createUI();
     this.setupEventListeners();
+    
+    // Load mock hand data but don't display cards yet
+    await this.loadMockHandData();
+    
+    // Hide hand area during shuffling
+    this.hideHandArea();
     
     // Initialize shuffle animation manager
     this.shuffleAnimationManager = new ShuffleAnimationManager(this);
@@ -58,6 +66,12 @@ export default class GameScene extends Phaser.Scene {
     const startY = 45;
     const cardHeight = 160;
     this.layout = {
+      functionalArea: {
+        cardPreview: {
+          x: width * 0.5 + 130 +  50 + 130 + 80 + 130 + 130 ,
+          y: startY + 100+ cardHeight
+        },
+      },
       // Opponent zones (top area)
       opponent: {
         top: { x: width * 0.5, y:  startY + 100+ cardHeight + 10+ 15},
@@ -102,7 +116,6 @@ export default class GameScene extends Phaser.Scene {
       console.log('Processing zone:', zoneType);
       const zone = this.createZone(position.x, position.y, zoneType, false);
       this.opponentZones[zoneType] = zone;
-      
     });
     
     // Create player zones
@@ -111,6 +124,13 @@ export default class GameScene extends Phaser.Scene {
       const zone = this.createZone(position.x, position.y, zoneType, true);
       this.playerZones[zoneType] = zone;
     });
+
+    Object.entries(this.layout.functionalArea).forEach(([zoneType, position]) => {
+      const zone = this.createZone(position.x, position.y, zoneType, false);
+      if (zoneType === 'cardPreview') {
+        this.cardPreviewZone = zone;
+      }
+    });
     
     // Add zone labels
     this.addZoneLabels();
@@ -118,7 +138,8 @@ export default class GameScene extends Phaser.Scene {
     // Create deck visualizations
     this.createDeckVisualizations();
   }
-
+  
+ 
   createZone(x, y, type, isPlayerZone) {
     let placeholder;
     
@@ -134,6 +155,8 @@ export default class GameScene extends Phaser.Scene {
       } else {
         this.initialOpponentDeckStack = initialDeckStack;
       }
+    } else if (type === 'cardPreview') {
+      placeholder = this.add.image(x, y, 'zone-placeholder');
     } else {
       // Zone placeholder for non-deck zones
       placeholder = this.add.image(x, y, 'zone-placeholder');
@@ -151,6 +174,9 @@ export default class GameScene extends Phaser.Scene {
       placeholder.setRotation(Math.PI / 2); // Rotate 90 degrees
       label.setAlpha(1); // Show the label
       label.setY(label.y - 20); // Move label up by 5 pixels
+    }else if(type === 'cardPreview'){
+      placeholder.setScale(3);
+      label.setAlpha(0); 
     }else{
       label.setAlpha(1); // Show the label
     }
@@ -436,10 +462,27 @@ export default class GameScene extends Phaser.Scene {
     
     this.events.on('card-drag-start', (card) => {
       this.draggedCard = card;
+      // Hide preview when dragging starts
+      this.hideCardPreview();
     });
     
     this.events.on('card-drag-end', (card) => {
       this.draggedCard = null;
+    });
+    
+    // Card hover events for preview
+    this.events.on('card-hover', (card) => {
+      // Only show preview for hand cards (not dragging)
+      if (!this.draggedCard && this.playerHand.includes(card)) {
+        this.showCardPreview(card.getCardData());
+      }
+    });
+    
+    this.events.on('card-unhover', (card) => {
+      // Hide preview when not hovering
+      if (!this.draggedCard) {
+        this.hideCardPreview();
+      }
     });
   }
 
@@ -457,10 +500,15 @@ export default class GameScene extends Phaser.Scene {
     
     // Get hand from game state
     const hand = this.gameStateManager.getPlayerHand();
-    if (!hand || hand.length === 0) return;
+    console.log('updatePlayerHand - hand data:', JSON.stringify(hand));
+    console.log('updatePlayerHand - hand length:', hand ? hand.length : 0);
+    if (!hand || hand.length === 0) {
+      console.log('No hand data found, returning early');
+      return;
+    }
     
-    // Calculate card positions
-    const cardSpacing = Math.min(140, (this.cameras.main.width - 200) / hand.length);
+    // Calculate card positions with larger spacing for bigger cards
+    const cardSpacing = Math.min(160, (this.cameras.main.width - 200) / hand.length);
     const startX = -(hand.length - 1) * cardSpacing / 2;
     
     // Create cards
@@ -469,7 +517,7 @@ export default class GameScene extends Phaser.Scene {
       const card = new Card(this, x, 0, cardData, {
         interactive: true,
         draggable: true,
-        scale: 0.8
+        scale: 1.15 // Match deck card scale
       });
       
       // Set up drag and drop
@@ -590,7 +638,7 @@ export default class GameScene extends Phaser.Scene {
   reorganizeHand() {
     if (this.playerHand.length === 0) return;
     
-    const cardSpacing = Math.min(140, (this.cameras.main.width - 200) / this.playerHand.length);
+    const cardSpacing = Math.min(160, (this.cameras.main.width - 200) / this.playerHand.length);
     const startX = -(this.playerHand.length - 1) * cardSpacing / 2;
     
     this.playerHand.forEach((card, index) => {
@@ -628,11 +676,53 @@ export default class GameScene extends Phaser.Scene {
       // Show deck stacks immediately to maintain deck visibility
       this.showDeckStacks();
       
-      // Update game state after shuffle animation completes
+      // Show hand area and update game state after shuffle animation completes
+      this.showHandArea();
       this.updateGameState();
     });
   }
 
+
+  async loadMockHandData() {
+    try {
+      console.log('Loading mock hand data...');
+      const response = await fetch('/handCards.json');
+      const mockData = await response.json();
+      
+      if (mockData.success) {
+        console.log('Mock hand data loaded:', mockData.data);
+        
+        // Setup mock game state with hand cards
+        this.gameStateManager.initializeGame('mock-game', mockData.data.playerId, 'Test Player');
+        
+        // Update game state with mock hand data
+        this.gameStateManager.updateGameEnv({
+          phase: GAME_CONFIG.phases.MAIN,
+          currentPlayer: mockData.data.playerId,
+          players: {
+            [mockData.data.playerId]: {
+              id: mockData.data.playerId,
+              name: 'Test Player',
+              hand: mockData.data.handCards
+            }
+          }
+        });
+        
+        console.log('Mock game state setup complete');
+        
+        // Debug: Check if the game state was set correctly
+        const gameState = this.gameStateManager.getGameState();
+        console.log('Current game state:', gameState);
+        console.log('Current player hand:', this.gameStateManager.getPlayerHand());
+        
+        // Don't update hand display yet - wait for shuffle animation to complete
+      } else {
+        console.error('Failed to load mock hand data');
+      }
+    } catch (error) {
+      console.error('Error loading mock hand data:', error);
+    }
+  }
 
   showDeckStacks() {
     // Show the permanent deck stacks directly without animation
@@ -645,5 +735,43 @@ export default class GameScene extends Phaser.Scene {
       card.setVisible(true);
       card.setAlpha(1); // Full opacity for crisp rendering
     });
+  }
+
+  hideHandArea() {
+    // Hide the hand container during shuffling
+    if (this.handContainer) {
+      this.handContainer.setVisible(false);
+    }
+  }
+
+  showHandArea() {
+    // Show the hand container after shuffling
+    if (this.handContainer) {
+      this.handContainer.setVisible(true);
+    }
+  }
+
+  showCardPreview(cardData) {
+    // Remove existing preview card if any
+    this.hideCardPreview();
+    
+    if (this.cardPreviewZone && cardData) {
+      // Create a larger preview card
+      this.previewCard = new Card(this, this.cardPreviewZone.x, this.cardPreviewZone.y, cardData, {
+        interactive: false,
+        draggable: false,
+        scale: 3.5 // Large scale for preview
+      });
+      
+      // Set high depth to appear on top
+      this.previewCard.setDepth(2000);
+    }
+  }
+
+  hideCardPreview() {
+    if (this.previewCard) {
+      this.previewCard.destroy();
+      this.previewCard = null;
+    }
   }
 }

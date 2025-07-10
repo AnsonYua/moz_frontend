@@ -16,7 +16,8 @@ const config = {
   render: {
     pixelArt: false,
     antialias: true,
-    roundPixels: true
+    roundPixels: false,  // Changed to false for better high-res image quality
+    powerPreference: 'high-performance'
   },
   scale: {
     mode: Phaser.Scale.FIT,
