@@ -39,26 +39,26 @@ export default class ShuffleAnimationManager {
       this.opponentDeckCards.push(card);
     }
     
-    // Show shuffle text
-    const shuffleText = this.scene.add.text(width / 2, height / 2 - 120, 'Shuffling Decks...', {
-      fontSize: '28px',
+    // Show shuffle text at top of screen
+    this.shuffleText = this.scene.add.text(width / 2, 80, 'Deck Shuffling', {
+      fontSize: '36px',
       fontFamily: 'Arial Bold',
-      fill: '#ffffff',
-      align: 'center'
+      fill: '#FFD700',
+      align: 'center',
+      stroke: '#000000',
+      strokeThickness: 2
     });
-    shuffleText.setOrigin(0.5);
-    shuffleText.setAlpha(0);
+    this.shuffleText.setOrigin(0.5);
+    this.shuffleText.setAlpha(0);
     
-    // Animate shuffle text
-    this.scene.tweens.add({
-      targets: shuffleText,
+    // Start flashing animation that continues until shuffle is complete
+    this.shuffleTextTween = this.scene.tweens.add({
+      targets: this.shuffleText,
       alpha: 1,
-      duration: 300,
+      duration: 500,
       yoyo: true,
-      repeat: 2,
-      onComplete: () => {
-        shuffleText.destroy();
-      }
+      repeat: -1, // Infinite repeat
+      ease: 'Power2.easeInOut'
     });
     
     // Bring cards to front layer before starting animation
@@ -293,27 +293,46 @@ export default class ShuffleAnimationManager {
   moveDecksToFinalPositions(onComplete) {
     // First, move leader cards to leader deck positions
     this.moveLeaderCardsToLeaderDecks(() => {
-      // Then fade out the temporary shuffle cards
-      this.scene.tweens.add({
-        targets: this.playerDeckCards,
-        alpha: 0,
-        duration: 300,
-        delay: 500,
-        onComplete: () => {
-          this.playerDeckCards.forEach(card => card.destroy());
-        }
-      });
+      // Stop the flashing text and fade it out
+      if (this.shuffleTextTween) {
+        this.shuffleTextTween.stop();
+      }
       
-      this.scene.tweens.add({
-        targets: this.opponentDeckCards,
-        alpha: 0,
-        duration: 300,
-        delay: 500,
-        onComplete: () => {
-          this.opponentDeckCards.forEach(card => card.destroy());
-          onComplete();
-        }
-      });
+      if (this.shuffleText) {
+        this.scene.tweens.add({
+          targets: this.shuffleText,
+          alpha: 0,
+          duration: 300,
+          onComplete: () => {
+            this.shuffleText.destroy();
+            this.shuffleText = null;
+          }
+        });
+      }
+      
+      // Call onComplete first to show deck stacks before fading out shuffle cards
+      onComplete();
+      
+      // Then fade out the temporary shuffle cards after a brief delay
+      setTimeout(() => {
+        this.scene.tweens.add({
+          targets: this.playerDeckCards,
+          alpha: 0,
+          duration: 300,
+          onComplete: () => {
+            this.playerDeckCards.forEach(card => card.destroy());
+          }
+        });
+        
+        this.scene.tweens.add({
+          targets: this.opponentDeckCards,
+          alpha: 0,
+          duration: 300,
+          onComplete: () => {
+            this.opponentDeckCards.forEach(card => card.destroy());
+          }
+        });
+      }, 200);
     });
   }
 

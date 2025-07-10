@@ -120,8 +120,25 @@ export default class GameScene extends Phaser.Scene {
   }
 
   createZone(x, y, type, isPlayerZone) {
-    // Zone placeholder
-    const placeholder = this.add.image(x, y, 'zone-placeholder');
+    let placeholder;
+    
+    // Show deck cards for deck zones, placeholder for others
+    if (type === 'deck') {
+      // Create deck stack for initial display
+      const initialDeckStack = this.createDeckStack(x, y, isPlayerZone ? 'player' : 'opponent');
+      placeholder = initialDeckStack[0]; // Use the first card as the main placeholder reference
+      
+      // Store the initial deck stacks for later reference
+      if (isPlayerZone) {
+        this.initialPlayerDeckStack = initialDeckStack;
+      } else {
+        this.initialOpponentDeckStack = initialDeckStack;
+      }
+    } else {
+      // Zone placeholder for non-deck zones
+      placeholder = this.add.image(x, y, 'zone-placeholder');
+    }
+    
     // Zone label
     const label = this.add.text(x, y + 95, type.toUpperCase(), {
       fontSize: '12px',
@@ -225,14 +242,11 @@ export default class GameScene extends Phaser.Scene {
   }
 
   createDeckVisualizations() {
-    // Create deck visualizations for opponent and player deck zones
-    // These will be shown after shuffle animation completes
-    this.playerDeckStack = this.createDeckStack(this.layout.player.deck.x, this.layout.player.deck.y, 'player');
-    this.opponentDeckStack = this.createDeckStack(this.layout.opponent.deck.x, this.layout.opponent.deck.y, 'opponent');
+    // Use the initial deck stacks created in createZone as the main deck stacks
+    this.playerDeckStack = this.initialPlayerDeckStack || [];
+    this.opponentDeckStack = this.initialOpponentDeckStack || [];
     
-    // Hide the deck stacks initially
-    this.playerDeckStack.forEach(card => card.setVisible(false));
-    this.opponentDeckStack.forEach(card => card.setVisible(false));
+    // The initial deck stacks are already visible, so no need to hide them
   }
 
   createDeckStack(x, y, owner) {
@@ -602,11 +616,17 @@ export default class GameScene extends Phaser.Scene {
   }
 
   playShuffleDeckAnimation() {
+    // Hide the initial deck stacks during shuffle
+    if (this.playerDeckStack) {
+      this.playerDeckStack.forEach(card => card.setVisible(false));
+    }
+    if (this.opponentDeckStack) {
+      this.opponentDeckStack.forEach(card => card.setVisible(false));
+    }
+    
     this.shuffleAnimationManager.playShuffleDeckAnimation(this.layout, () => {
-      // Delay showing deck stacks to avoid flash
-      setTimeout(() => {
-        this.showDeckStacks();
-      }, 100);
+      // Show deck stacks immediately to maintain deck visibility
+      this.showDeckStacks();
       
       // Update game state after shuffle animation completes
       this.updateGameState();
@@ -615,29 +635,15 @@ export default class GameScene extends Phaser.Scene {
 
 
   showDeckStacks() {
-    // Show the permanent deck stacks with smooth fade-in animation
+    // Show the permanent deck stacks directly without animation
     this.playerDeckStack.forEach((card, index) => {
       card.setVisible(true);
-      card.setAlpha(0);
-      this.tweens.add({
-        targets: card,
-        alpha: 1, // Full opacity for crisp rendering
-        duration: 300,
-        delay: index * 50,
-        ease: 'Power2.easeOut'
-      });
+      card.setAlpha(1); // Full opacity for crisp rendering
     });
     
     this.opponentDeckStack.forEach((card, index) => {
       card.setVisible(true);
-      card.setAlpha(0);
-      this.tweens.add({
-        targets: card,
-        alpha: 1, // Full opacity for crisp rendering
-        duration: 300,
-        delay: index * 50,
-        ease: 'Power2.easeOut'
-      });
+      card.setAlpha(1); // Full opacity for crisp rendering
     });
   }
 }
