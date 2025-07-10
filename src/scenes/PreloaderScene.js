@@ -70,24 +70,28 @@ export default class PreloaderScene extends Phaser.Scene {
   }
 
   loadCardImages() {
-    // Load character cards (c-1 to c-28)
+    // Load character cards (c-1 to c-28) - both original and preview versions
     for (let i = 1; i <= 28; i++) {
       this.load.image(`c-${i}`, `src/assets/character/c-${i}.png`);
+      this.load.image(`c-${i}-preview`, `src/assets/character/c-${i}-preview.png`);
     }
     
-    // Load leader cards (s-1 to s-6) 
+    // Load leader cards (s-1 to s-6) - both original and preview versions
     for (let i = 1; i <= 6; i++) {
       this.load.image(`s-${i}`, `src/assets/leader/s-${i}.png`);
+      this.load.image(`s-${i}-preview`, `src/assets/leader/s-${i}-preview.png`);
     }
     
-    // Load help cards (h-1 to h-15)
+    // Load help cards (h-1 to h-15) - both original and preview versions
     for (let i = 1; i <= 15; i++) {
       this.load.image(`h-${i}`, `src/assets/utilityCard/h-${i}.png`);
+      this.load.image(`h-${i}-preview`, `src/assets/utilityCard/h-${i}-preview.png`);
     }
     
-    // Load SP cards (sp-1 to sp-10)
+    // Load SP cards (sp-1 to sp-10) - both original and preview versions
     for (let i = 1; i <= 10; i++) {
       this.load.image(`sp-${i}`, `src/assets/utilityCard/sp-${i}.png`);
+      this.load.image(`sp-${i}-preview`, `src/assets/utilityCard/sp-${i}-preview.png`);
     }
   }
 

@@ -11,6 +11,7 @@ export default class Card extends Phaser.GameObjects.Container {
       draggable: false,
       faceDown: false,
       scale: 1,
+      usePreview: false,  // Use preview images (-preview.png) instead of original
       ...options
     };
     
@@ -31,7 +32,9 @@ export default class Card extends Phaser.GameObjects.Container {
       this.add(this.cardImage);
     } else {
       // Show actual card image when face up
-      const cardKey = this.cardData.id; // Use card ID as texture key (e.g., "c-1", "h-2", "sp-1")
+      const cardKey = this.options.usePreview ? 
+        `${this.cardData.id}-preview` :  // Use preview version (e.g., "c-1-preview")
+        this.cardData.id;                // Use original version (e.g., "c-1")
       this.cardImage = this.scene.add.image(0, 0, cardKey);
       this.add(this.cardImage);
       

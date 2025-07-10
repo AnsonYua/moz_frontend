@@ -517,7 +517,8 @@ export default class GameScene extends Phaser.Scene {
       const card = new Card(this, x, 0, cardData, {
         interactive: true,
         draggable: true,
-        scale: 1.15 // Match deck card scale
+        scale: 1.15, // Match deck card scale
+        usePreview: true // Use preview images for hand cards
       });
       
       // Set up drag and drop
@@ -756,11 +757,12 @@ export default class GameScene extends Phaser.Scene {
     this.hideCardPreview();
     
     if (this.cardPreviewZone && cardData) {
-      // Create a larger preview card
+      // Create a larger preview card using original (full-detail) images
       this.previewCard = new Card(this, this.cardPreviewZone.x, this.cardPreviewZone.y, cardData, {
         interactive: false,
         draggable: false,
-        scale: 3.5 // Large scale for preview
+        scale: 3.5, // Large scale for preview
+        usePreview: false // Use original full-detail images for preview
       });
       
       // Set high depth to appear on top
