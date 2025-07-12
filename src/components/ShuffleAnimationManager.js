@@ -340,7 +340,10 @@ export default class ShuffleAnimationManager {
     const layout = this.scene.layout;
     const { width, height } = this.scene.cameras.main;
     
-    // Create 5 leader cards for each player as separate decks
+    // Get leader cards data from scene
+    const leaderCards = this.scene.leaderCards || [];
+    
+    // Create leader cards for each player as separate decks
     this.playerLeaderCards = [];
     this.opponentLeaderCards = [];
     
@@ -350,23 +353,25 @@ export default class ShuffleAnimationManager {
     
     // Create player leader cards starting from bottom of screen (separate deck)
     const playerStartY = height + 100; // Start below screen
-    for (let i = 0; i < 5; i++) {
-      const cardContainer = this.createLeaderCardWithRoundedCorners(playerLeaderDeckPos.x, playerStartY);
+    for (let i = 0; i < Math.min(4, leaderCards.length); i++) {
+      const leaderCardData = leaderCards[i];
+      const cardContainer = this.createLeaderCardWithRoundedCorners(playerLeaderDeckPos.x, playerStartY, leaderCardData);
       cardContainer.setDepth(1000 + i);
       this.playerLeaderCards.push(cardContainer);
     }
     
     // Create opponent leader cards starting from top of screen (separate deck)
     const opponentStartY = -100; // Start above screen
-    for (let i = 0; i < 5; i++) {
-      const cardContainer = this.createLeaderCardWithRoundedCorners(opponentLeaderDeckPos.x, opponentStartY);
+    for (let i = 0; i < Math.min(4, leaderCards.length); i++) {
+      const leaderCardData = leaderCards[i];
+      const cardContainer = this.createLeaderCardWithRoundedCorners(opponentLeaderDeckPos.x, opponentStartY, leaderCardData);
       cardContainer.setDepth(1000 + i);
       this.opponentLeaderCards.push(cardContainer);
     }
     
     // Animation completion tracking
     let completedAnimations = 0;
-    const totalAnimations = 10; // 5 player + 5 opponent
+    const totalAnimations = this.playerLeaderCards.length + this.opponentLeaderCards.length;
     
     const checkComplete = () => {
       completedAnimations++;
@@ -436,9 +441,10 @@ export default class ShuffleAnimationManager {
     });
   }
 
-  createLeaderCardWithRoundedCorners(x, y) {
-    // Create the leader card image directly
-    const leaderCard = this.scene.add.image(x, y, 'card-back-leader');
+  createLeaderCardWithRoundedCorners(x, y, cardData = null) {
+    // Create the leader card image directly - use actual leader card if data provided
+    const cardKey = cardData ? `${cardData.id}-preview` : 'card-back-leader';
+    const leaderCard = this.scene.add.image(x, y, cardKey);
     const scaleX = GAME_CONFIG.card.width / leaderCard.width;
     const scaleY = GAME_CONFIG.card.height / leaderCard.height;
     leaderCard.setScale(Math.min(scaleX, scaleY) * 0.95);

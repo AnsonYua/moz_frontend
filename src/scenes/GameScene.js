@@ -16,6 +16,7 @@ export default class GameScene extends Phaser.Scene {
     this.shuffleAnimationManager = null;
     this.cardPreviewZone = null;
     this.previewCard = null;
+    this.leaderCards = [];
   }
 
   init(data) {
@@ -32,6 +33,9 @@ export default class GameScene extends Phaser.Scene {
     
     // Load mock hand data but don't display cards yet
     await this.loadMockHandData();
+    
+    // Load leader cards data
+    await this.loadLeaderCardsData();
     
     // Hide hand area during shuffling
     this.hideHandArea();
@@ -157,6 +161,9 @@ export default class GameScene extends Phaser.Scene {
       }
     } else if (type === 'cardPreview') {
       placeholder = this.add.image(x, y, 'zone-placeholder');
+    } else if (type === 'leaderDeck') {
+      // No placeholder for leaderDeck - cards will be added during shuffle animation
+      placeholder = null;
     } else {
       // Zone placeholder for non-deck zones
       placeholder = this.add.image(x, y, 'zone-placeholder');
@@ -171,7 +178,7 @@ export default class GameScene extends Phaser.Scene {
     });
     label.setOrigin(0.5);
     if(type === 'leaderDeck' ) {
-      placeholder.setRotation(Math.PI / 2); // Rotate 90 degrees
+      // No placeholder rotation needed since placeholder is null
       label.setAlpha(1); // Show the label
       label.setY(label.y - 20); // Move label up by 5 pixels
     }else if(type === 'cardPreview'){
@@ -791,5 +798,63 @@ export default class GameScene extends Phaser.Scene {
       this.previewCard.destroy();
       this.previewCard = null;
     }
+  }
+
+  async loadLeaderCardsData() {
+    try {
+      console.log('Loading leader cards data...');
+      const response = await fetch('/leaderCards.json');
+      const mockData = await response.json();
+      
+      if (mockData.success) {
+        console.log('Leader cards data loaded:', mockData.data);
+        this.leaderCards = mockData.data.leaderCards;
+        
+        // Leader cards will be displayed during shuffle animation, not immediately
+      } else {
+        console.error('Failed to load leader cards data');
+      }
+    } catch (error) {
+      console.error('Error loading leader cards data:', error);
+    }
+  }
+
+  updateLeaderDecks() {
+    // Update player leader deck
+    const playerLeaderZone = this.playerZones.leaderDeck;
+    if (playerLeaderZone && this.leaderCards.length > 0) {
+      this.createLeaderDeckDisplay(playerLeaderZone, 'player');
+    }
+    
+    // Update opponent leader deck
+    const opponentLeaderZone = this.opponentZones.leaderDeck;
+    if (opponentLeaderZone && this.leaderCards.length > 0) {
+      this.createLeaderDeckDisplay(opponentLeaderZone, 'opponent');
+    }
+  }
+
+  createLeaderDeckDisplay(zone, owner) {
+    // Clear existing placeholder
+    if (zone.placeholder) {
+      zone.placeholder.destroy();
+    }
+    
+    // Create a stack of leader cards (showing top card)
+    const topCard = this.leaderCards[0]; // Show the first leader card on top
+    const card = new Card(this, zone.x, zone.y, topCard, {
+      interactive: true,
+      draggable: false,
+      scale: 0.9,
+      usePreview: true // Use preview images for leader deck display
+    });
+    
+    // Rotate the card 90 degrees to match the original leaderDeck orientation
+    card.setRotation(Math.PI / 2);
+    
+    // Store the card in the zone
+    zone.card = card;
+    zone.placeholder = card; // Update placeholder reference
+    
+    console.log(`Created leader deck display for ${owner} with card:`, topCard.id);
   }
 }

@@ -1,0 +1,35 @@
+{
+  "success": true,
+  "data": {
+    "leaderCards": [
+      {
+        "id": "s-1",
+        "name": "Napoleon Bonaparte",
+        "type": "leader",
+        "power": 5,
+        "effect": "French Revolution leader with military tactics"
+      },
+      {
+        "id": "s-3", 
+        "name": "George Washington",
+        "type": "leader", 
+        "power": 4,
+        "effect": "American Revolution leader with strategic command"
+      },
+      {
+        "id": "s-4",
+        "name": "Toussaint Louverture", 
+        "type": "leader",
+        "power": 4,
+        "effect": "Haitian Revolution leader with guerrilla warfare"
+      },
+      {
+        "id": "s-6",
+        "name": "Simón Bolívar",
+        "type": "leader",
+        "power": 5, 
+        "effect": "South American liberator with revolutionary spirit"
+      }
+    ]
+  }
+}
