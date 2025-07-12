@@ -334,6 +334,9 @@ export default class GameScene extends Phaser.Scene {
     });
     this.phaseText.setOrigin(0.5);
     
+    // Opponent hand count display
+    this.createOpponentHandDisplay();
+    
     // Action buttons
     this.createActionButtons();
     
@@ -465,6 +468,53 @@ export default class GameScene extends Phaser.Scene {
     
     this.testOpponentLeaderButton.on('pointerdown', () => this.selectOpponentLeaderCard());
 
+    // Test Add Card button
+    this.testAddCardButton = this.add.image(0+130, height - 240, 'button');
+    this.testAddCardButton.setScale(0.8);
+    this.testAddCardButton.setInteractive();
+    
+    const testAddCardButtonText = this.add.text(0+130, height - 240, 'Test Add Card', {
+      fontSize: '12px',
+      fontFamily: 'Arial',
+      fill: '#ffffff'
+    });
+    testAddCardButtonText.setOrigin(0.5);
+    
+    this.testAddCardButton.on('pointerdown', () => this.testAddCard());
+
+  }
+
+  createOpponentHandDisplay() {
+    const { width, height } = this.cameras.main;
+    
+    // Position the display in the top-right area near opponent zones
+    const displayX =  200;
+    const displayY = 120;
+    
+    // Background for the display
+    const displayBg = this.add.graphics();
+    displayBg.fillStyle(0x000000, 0.7);
+    displayBg.fillRoundedRect(displayX - 70, displayY - 20, 220, 45, 5);
+    displayBg.lineStyle(2, 0x888888);
+    displayBg.strokeRoundedRect(displayX - 70, displayY - 20, 220, 45, 5);
+    
+    // Label text
+    this.opponentHandLabel = this.add.text(displayX+30, displayY, 'Opponent Hand:', {
+      fontSize: '24px',
+      fontFamily: 'Arial',
+      fill: '#ffffff',
+      align: 'center'
+    });
+    this.opponentHandLabel.setOrigin(0.5);
+    
+    // Count text
+    this.opponentHandCountText = this.add.text(displayX+130, displayY +1 , '0', {
+      fontSize: '25px',
+      fontFamily: 'Arial Bold',
+      fill: '#FFD700',
+      align: 'center'
+    });
+    this.opponentHandCountText.setOrigin(0.5);
   }
 
   createHandArea() {
@@ -618,6 +668,12 @@ export default class GameScene extends Phaser.Scene {
     // Update opponent info
     this.opponentVPText.setText(`VP: ${this.gameStateManager.getVictoryPoints(opponent)}`);
     this.opponentHandText.setText(`Hand: ${opponentData ? opponentData.hand.length : 0}`);
+    
+    // Update opponent hand count display
+    if (this.opponentHandCountText) {
+      const opponentHandCount = opponentData ? opponentData.hand.length : 0;
+      this.opponentHandCountText.setText(opponentHandCount.toString());
+    }
     
     // Update turn indicator
     const isCurrentPlayer = this.gameStateManager.isCurrentPlayer();
@@ -1129,4 +1185,219 @@ export default class GameScene extends Phaser.Scene {
       card.setDepth(1000 + this.shuffleAnimationManager.opponentLeaderCards.length - index);
     });
   }
+
+  async testAddCard() {
+    try {
+      console.log('Loading add card data...');
+      const response = await fetch('/addNewHand.json');
+      const addCardData = await response.json();
+      
+      if (addCardData.success) {
+        console.log('Add card data loaded:', addCardData.data);
+        
+        const { playerId, handCardsToAdd } = addCardData.data;
+        const isPlayerTarget = playerId === 'player-1';
+        
+        console.log(`Adding ${handCardsToAdd.length} cards to ${isPlayerTarget ? 'player' : 'opponent'} hand`);
+        
+        if (isPlayerTarget) {
+          // Add cards to player hand with animation
+          this.addCardsToPlayerHand(handCardsToAdd);
+        } else {
+          // Add cards to opponent hand (update count display)
+          this.addCardsToOpponentHand(handCardsToAdd);
+        }
+      } else {
+        console.error('Failed to load add card data');
+      }
+    } catch (error) {
+      console.error('Error loading add card data:', error);
+    }
+  }
+
+  addCardsToPlayerHand(cardsToAdd) {
+    // Get current game state to update
+    const gameState = this.gameStateManager.getGameState();
+    const player = this.gameStateManager.getPlayer();
+    
+    if (!player || !player.hand) {
+      console.error('Player hand not found');
+      return;
+    }
+
+    // Add cards to game state first
+    const updatedHand = [...player.hand, ...cardsToAdd];
+    
+    // Update game state
+    this.gameStateManager.updateGameEnv({
+      players: {
+        ...gameState.gameEnv.players,
+        [gameState.playerId]: {
+          ...player,
+          hand: updatedHand
+        }
+      }
+    });
+
+    // Animate cards from deck to hand
+    this.animateCardsFromDeckToHand(cardsToAdd);
+  }
+
+  addCardsToOpponentHand(cardsToAdd) {
+    // Get current game state to update
+    const gameState = this.gameStateManager.getGameState();
+    const opponent = this.gameStateManager.getOpponent();
+    const opponentData = this.gameStateManager.getPlayer(opponent);
+    
+    if (!opponentData || !opponentData.hand) {
+      console.error('Opponent hand not found');
+      return;
+    }
+
+    // Add cards to opponent's hand in game state
+    const updatedOpponentHand = [...opponentData.hand, ...cardsToAdd];
+    
+    // Update game state
+    this.gameStateManager.updateGameEnv({
+      players: {
+        ...gameState.gameEnv.players,
+        [opponent]: {
+          ...opponentData,
+          hand: updatedOpponentHand
+        }
+      }
+    });
+
+    // Update UI to reflect new opponent hand count
+    this.updateUI();
+    
+    console.log(`Added ${cardsToAdd.length} cards to opponent hand`);
+  }
+
+  animateCardsFromDeckToHand(cardsToAdd) {
+    const playerDeckPosition = this.layout.player.deck;
+    
+    // Calculate final spacing for all cards (existing + new)
+    const finalTotalCards = this.playerHand.length + cardsToAdd.length;
+    const finalCardSpacing = Math.min(160, (this.cameras.main.width - 200) / finalTotalCards);
+    const finalStartX = -(finalTotalCards - 1) * finalCardSpacing / 2;
+    
+    // First, animate existing hand cards to their final positions (slide left once)
+    this.slideHandCardsLeft(finalTotalCards, finalCardSpacing);
+    
+    // Animate each new card sequentially
+    cardsToAdd.forEach((cardData, index) => {
+      setTimeout(() => {
+        // Create temporary card at deck position (card back)
+        const tempCard = this.add.image(playerDeckPosition.x, playerDeckPosition.y, 'card-back');
+        
+        // Set the card to hand card size immediately
+        const scaleX = GAME_CONFIG.card.width / tempCard.width;
+        const scaleY = GAME_CONFIG.card.height / tempCard.height;
+        const handScale = Math.min(scaleX, scaleY) * 0.95 * 1.15; // Match hand card scale
+        tempCard.setScale(handScale);
+        tempCard.setDepth(2000);
+        
+        // Calculate where this specific new card should go (using final spacing)
+        const cardPosition = this.playerHand.length + index; // Position of this card in final hand
+        const newCardX = finalStartX + (cardPosition * finalCardSpacing);
+        
+        // Convert to world coordinates
+        const worldTargetX = this.handContainer.x + newCardX;
+        const worldTargetY = this.handContainer.y;
+        
+        // Animate new card from deck to hand position
+        this.tweens.add({
+          targets: tempCard,
+          x: worldTargetX,
+          y: worldTargetY,
+          duration: 500,
+          ease: 'Power2.easeOut',
+          onComplete: () => {
+            // Flip animation: card back to card face
+            this.tweens.add({
+              targets: tempCard,
+              scaleX: 0, // Flip to invisible
+              duration: 150,
+              ease: 'Power2.easeIn',
+              onComplete: () => {
+                // Change to actual card image
+                const cardKey = `${cardData.id}-preview`;
+                tempCard.setTexture(cardKey);
+                
+                // Recalculate scale for the new texture to maintain consistent card size
+                const newScaleX = GAME_CONFIG.card.width / tempCard.width;
+                const newScaleY = GAME_CONFIG.card.height / tempCard.height;
+                const newHandScale = Math.min(newScaleX, newScaleY) * 0.95 * 1.15;
+                
+                // Update Y scale to match the new texture
+                tempCard.setScale(0, newHandScale);
+                
+                // Flip back to visible with correct scale
+                this.tweens.add({
+                  targets: tempCard,
+                  scaleX: newHandScale, // Use properly calculated scale for new texture
+                  duration: 150,
+                  ease: 'Power2.easeOut',
+                  onComplete: () => {
+                    // Calculate position relative to hand container
+                    const relativeX = tempCard.x - this.handContainer.x;
+                    const relativeY = tempCard.y - this.handContainer.y;
+                    
+                    // Convert temporary card to actual hand card
+                    const newCard = new Card(this, relativeX, relativeY, cardData, {
+                      interactive: true,
+                      draggable: true,
+                      scale: 1.15,
+                      usePreview: true
+                    });
+                    
+                    // Set up drag and drop
+                    this.input.setDraggable(newCard);
+                    
+                    // Add to hand array and container
+                    this.playerHand.push(newCard);
+                    this.handContainer.add(newCard);
+                    
+                    // Update original position for drag/drop
+                    newCard.originalPosition.x = relativeX;
+                    newCard.originalPosition.y = relativeY;
+                    
+                    // Set proper depth
+                    newCard.setDepth(100);
+                    
+                    // Destroy temporary card
+                    tempCard.destroy();
+                    
+                    console.log(`Card ${cardData.id} added to hand at position ${this.playerHand.length - 1} at (${relativeX}, ${relativeY})`);
+                  }
+                });
+              }
+            });
+          }
+        });
+      }, index * 400); // 400ms delay between each card
+    });
+  }
+
+  slideHandCardsLeft(newTotalCards, cardSpacing) {
+    // Recalculate positions for all existing cards with new spacing
+    const newStartX = -(newTotalCards - 1) * cardSpacing / 2;
+    
+    this.playerHand.forEach((card, index) => {
+      const newX = newStartX + (index * cardSpacing);
+      
+      // Animate existing cards to new positions
+      this.tweens.add({
+        targets: card,
+        x: newX,
+        duration: 300,
+        ease: 'Power2.easeOut'
+      });
+      
+      // Update original position for drag/drop functionality
+      card.originalPosition.x = newX;
+    });
+  }
+
 }
