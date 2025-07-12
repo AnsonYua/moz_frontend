@@ -1,11 +1,54 @@
 import Phaser from 'phaser';
 import { GAME_CONFIG } from '../config/gameConfig.js';
 
+// Utility function to determine card type and properties from ID
+function getCardInfoFromId(id) {
+  if (!id) return null;
+  
+  if (id.startsWith('c-')) {
+    return {
+      type: 'character',
+      folder: 'character'
+    };
+  } else if (id.startsWith('h-')) {
+    return {
+      type: 'help',
+      folder: 'utilityCard'
+    };
+  } else if (id.startsWith('sp-')) {
+    return {
+      type: 'sp',
+      folder: 'utilityCard'
+    };
+  } else if (id.startsWith('s-')) {
+    return {
+      type: 'leader',
+      folder: 'leader'
+    };
+  }
+  
+  return null;
+}
+
 export default class Card extends Phaser.GameObjects.Container {
   constructor(scene, x, y, cardData, options = {}) {
     super(scene, x, y);
     
-    this.cardData = cardData;
+    // Auto-populate card data from ID if only ID is provided
+    if (cardData && cardData.id && !cardData.type) {
+      const cardInfo = getCardInfoFromId(cardData.id);
+      if (cardInfo) {
+        this.cardData = {
+          ...cardData,
+          type: cardInfo.type,
+          folder: cardInfo.folder
+        };
+      } else {
+        this.cardData = cardData;
+      }
+    } else {
+      this.cardData = cardData;
+    }
     this.options = {
       interactive: true,
       draggable: false,
@@ -304,7 +347,9 @@ export default class Card extends Phaser.GameObjects.Container {
 
   canPlayInZone(zoneType) {
     if (this.cardData.type === 'character') {
-      return this.cardData.zones && this.cardData.zones.includes(zoneType);
+      // Default character zone compatibility - can be placed in top, left, or right
+      const defaultZones = ['top', 'left', 'right'];
+      return this.cardData.zones ? this.cardData.zones.includes(zoneType) : defaultZones.includes(zoneType);
     }
     
     if (this.cardData.type === 'help') {

@@ -1,0 +1,11 @@
+{
+  "success": true,
+  "data": {
+    "playerId": "player-1",
+    "handCardsToAdd": [
+      {
+        "id": "c-28"
+      }
+    ]
+  }
+}

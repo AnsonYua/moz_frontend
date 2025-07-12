@@ -162,8 +162,8 @@ export default class GameScene extends Phaser.Scene {
     } else if (type === 'cardPreview') {
       placeholder = this.add.image(x, y, 'zone-placeholder');
     } else if (type === 'leaderDeck') {
-      // No placeholder for leaderDeck - cards will be added during shuffle animation
-      placeholder = null;
+      // Create placeholder for leaderDeck zones
+      placeholder = this.add.image(x, y, 'zone-placeholder');
     } else {
       // Zone placeholder for non-deck zones
       placeholder = this.add.image(x, y, 'zone-placeholder');
@@ -178,7 +178,7 @@ export default class GameScene extends Phaser.Scene {
     });
     label.setOrigin(0.5);
     if(type === 'leaderDeck' ) {
-      // No placeholder rotation needed since placeholder is null
+      placeholder.setRotation(Math.PI / 2); // Rotate 90 degrees
       label.setAlpha(1); // Show the label
       label.setY(label.y - 20); // Move label up by 5 pixels
     }else if(type === 'cardPreview'){
@@ -450,6 +450,20 @@ export default class GameScene extends Phaser.Scene {
       testLeaderButtonText.setOrigin(0.5);
       
       this.testLeaderButton.on('pointerdown', () => this.selectLeaderCard());
+
+    // Test Opponent Leader button
+    this.testOpponentLeaderButton = this.add.image(0+130, height - 180, 'button');
+    this.testOpponentLeaderButton.setScale(0.8);
+    this.testOpponentLeaderButton.setInteractive();
+    
+    const testOpponentLeaderButtonText = this.add.text(0+130, height - 180, 'Test Opp Leader', {
+      fontSize: '12px',
+      fontFamily: 'Arial',
+      fill: '#ffffff'
+    });
+    testOpponentLeaderButtonText.setOrigin(0.5);
+    
+    this.testOpponentLeaderButton.on('pointerdown', () => this.selectOpponentLeaderCard());
 
   }
 
@@ -916,7 +930,16 @@ export default class GameScene extends Phaser.Scene {
           interactive: true,
           draggable: false,
           scale: 0.9,
-          usePreview: false // Use original full-detail image for leader position
+          usePreview: true // Use preview image for leader position
+        });
+
+        // Add hover events for preview
+        leaderCard.on('pointerover', () => {
+          this.showCardPreview(cardData);
+        });
+        
+        leaderCard.on('pointerout', () => {
+          this.hideCardPreview();
         });
 
         // Update the zone
@@ -975,6 +998,135 @@ export default class GameScene extends Phaser.Scene {
 
       // Update depth to maintain proper stacking order
       card.setDepth(1000 + this.shuffleAnimationManager.playerLeaderCards.length - index);
+    });
+  }
+
+  selectOpponentLeaderCard() {
+    // Get the opponent leader deck zone
+    const opponentLeaderDeckZone = this.opponentZones.leaderDeck;
+    const opponentLeaderZone = this.opponentZones.leader;
+    
+    if (!opponentLeaderDeckZone || !opponentLeaderZone) {
+      console.log('Opponent leader zones not found');
+      return;
+    }
+
+    // Check if there are leader cards in the animation manager
+    if (!this.shuffleAnimationManager || !this.shuffleAnimationManager.opponentLeaderCards || this.shuffleAnimationManager.opponentLeaderCards.length === 0) {
+      console.log('No opponent leader cards available in deck');
+      return;
+    }
+
+    // Get the top card from the opponent leader deck (first card in array - highest depth/position)
+    const topCardIndex = 0;
+    const topCard = this.shuffleAnimationManager.opponentLeaderCards[topCardIndex];
+    
+    if (!topCard) {
+      console.log('No opponent top card found');
+      return;
+    }
+
+    // Get the corresponding card data (the cards are in the same order as leaderCards array)
+    const cardData = this.leaderCards[this.leaderCards.length - this.shuffleAnimationManager.opponentLeaderCards.length];
+    
+    if (!cardData) {
+      console.log('No card data found for opponent top card');
+      return;
+    }
+
+    console.log('Moving opponent leader card to leader position:', cardData.name);
+
+    // Animate the card moving to opponent leader position and flipping
+    this.tweens.add({
+      targets: topCard,
+      x: opponentLeaderZone.x,
+      y: opponentLeaderZone.y,
+      rotation: 0, // Remove the 90-degree rotation
+      duration: 300,
+      ease: 'Power2.easeInOut',
+      onComplete: () => {
+        // NOW remove the card from the opponent leader deck array
+        this.shuffleAnimationManager.opponentLeaderCards.splice(topCardIndex, 1);
+
+        // Destroy the old card back image
+        topCard.destroy();
+        if (topCard.borderGraphics) {
+          topCard.borderGraphics.destroy();
+        }
+
+        // Create new card with actual leader card image (face up)
+        const leaderCard = new Card(this, opponentLeaderZone.x, opponentLeaderZone.y, cardData, {
+          interactive: true,
+          draggable: false,
+          scale: 0.9,
+          usePreview: true // Use preview image for leader position
+        });
+
+        // Add hover events for preview
+        leaderCard.on('pointerover', () => {
+          this.showCardPreview(cardData);
+        });
+        
+        leaderCard.on('pointerout', () => {
+          this.hideCardPreview();
+        });
+
+        // Update the zone
+        opponentLeaderZone.card = leaderCard;
+        if (opponentLeaderZone.placeholder) {
+          opponentLeaderZone.placeholder.setVisible(false);
+        }
+
+        console.log(`Opponent leader card ${cardData.name} placed in leader position`);
+
+        // Move remaining cards forward to maintain top card position
+        this.repositionOpponentLeaderDeckCards();
+      }
+    });
+  }
+
+  repositionOpponentLeaderDeckCards() {
+    if (!this.shuffleAnimationManager || !this.shuffleAnimationManager.opponentLeaderCards) {
+      return;
+    }
+
+    const opponentLeaderDeckZone = this.opponentZones.leaderDeck;
+    if (!opponentLeaderDeckZone) {
+      return;
+    }
+
+    // Get the target position for the top card (same as original opponent leaderDeck position)
+    const targetX = opponentLeaderDeckZone.x;
+    const targetY = opponentLeaderDeckZone.y;
+
+    // Animate remaining cards to their new positions
+    this.shuffleAnimationManager.opponentLeaderCards.forEach((card, index) => {
+      // Calculate the new position based on the stacking offset (match original opponent positioning)
+      const newX = targetX;
+      const newY = targetY - (index * 30); // 30 pixel offset ABOVE the leaderDeck position (like original)
+
+      // Animate card to new position
+      this.tweens.add({
+        targets: card,
+        x: newX,
+        y: newY,
+        duration: 150,
+        ease: 'Power2.easeOut'
+      });
+
+      // Also animate the border graphics if they exist
+      if (card.borderGraphics) {
+        this.tweens.add({
+          targets: card.borderGraphics,
+          x: newX,
+          y: newY,
+          duration: 150,
+          ease: 'Power2.easeOut'
+        });
+      }
+
+      // Update depth to maintain proper stacking order
+      card.setDepth(1000 + this.shuffleAnimationManager.opponentLeaderCards.length - index);
     });
   }
 }
