@@ -1277,15 +1277,7 @@ export default class GameScene extends Phaser.Scene {
   animateCardsFromDeckToHand(cardsToAdd) {
     const playerDeckPosition = this.layout.player.deck;
     
-    // Calculate final spacing for all cards (existing + new)
-    const finalTotalCards = this.playerHand.length + cardsToAdd.length;
-    const finalCardSpacing = Math.min(160, (this.cameras.main.width - 200) / finalTotalCards);
-    const finalStartX = -(finalTotalCards - 1) * finalCardSpacing / 2;
-    
-    // First, animate existing hand cards to their final positions (slide left once)
-    this.slideHandCardsLeft(finalTotalCards, finalCardSpacing);
-    
-    // Animate each new card sequentially
+    // Animate each new card sequentially with individual slide animations
     cardsToAdd.forEach((cardData, index) => {
       setTimeout(() => {
         // Create temporary card at deck position (card back)
@@ -1298,13 +1290,19 @@ export default class GameScene extends Phaser.Scene {
         tempCard.setScale(handScale);
         tempCard.setDepth(2000);
         
-        // Calculate where this specific new card should go (using final spacing)
-        const cardPosition = this.playerHand.length + index; // Position of this card in final hand
-        const newCardX = finalStartX + (cardPosition * finalCardSpacing);
+        // Calculate spacing for current hand size + this new card
+        const currentHandLength = this.playerHand.length; // Current cards in hand
+        const totalCards = currentHandLength + 1; // Including this new card
+        const cardSpacing = Math.min(160, (this.cameras.main.width - 200) / totalCards);
+        const startX = -(totalCards - 1) * cardSpacing / 2;
+        const newCardX = startX + (currentHandLength * cardSpacing); // Position for new card
         
         // Convert to world coordinates
         const worldTargetX = this.handContainer.x + newCardX;
         const worldTargetY = this.handContainer.y;
+        
+        // Animate existing hand cards to slide left to make space for this card
+        this.slideHandCardsLeft(totalCards, cardSpacing);
         
         // Animate new card from deck to hand position
         this.tweens.add({
@@ -1376,7 +1374,7 @@ export default class GameScene extends Phaser.Scene {
             });
           }
         });
-      }, index * 400); // 400ms delay between each card
+      }, index * 1000); // 1000ms delay between each card to allow slide + flip animations to complete
     });
   }
 
