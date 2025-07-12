@@ -416,11 +416,11 @@ export default class GameScene extends Phaser.Scene {
     this.endTurnButton.on('pointerdown', () => this.endTurn());
     
     // Menu button
-    this.menuButton = this.add.image(width - 220, height - 60, 'button');
+    this.menuButton = this.add.image( 0+130, height - 60, 'button');
     this.menuButton.setScale(0.8);
     this.menuButton.setInteractive();
     
-    const menuText = this.add.text(width - 220, height - 60, 'Menu', {
+    const menuText = this.add.text( 0+130, height - 60, 'Menu', {
       fontSize: '14px',
       fontFamily: 'Arial',
       fill: '#ffffff'
@@ -428,6 +428,22 @@ export default class GameScene extends Phaser.Scene {
     menuText.setOrigin(0.5);
     
     this.menuButton.on('pointerdown', () => this.openMenu());
+
+
+    // button for testing
+      this.testLeaderButton = this.add.image( 0+130, height - 120, 'button');
+      this.testLeaderButton.setScale(0.8);
+      this.testLeaderButton.setInteractive();
+      
+      const testLeaderButtonText = this.add.text( 0+130, height - 120, 'Test Leader', {
+        fontSize: '14px',
+        fontFamily: 'Arial',
+        fill: '#ffffff'
+      });
+      testLeaderButtonText.setOrigin(0.5);
+      
+      this.testLeaderButton.on('pointerdown', () => this.openMenu());
+
   }
 
   createHandArea() {
