@@ -353,7 +353,7 @@ export default class ShuffleAnimationManager {
     
     // Create player leader cards starting from bottom of screen (separate deck)
     const playerStartY = height + 100; // Start below screen
-    for (let i = 0; i < Math.min(4, leaderCards.length); i++) {
+    for (let i = 0; i < leaderCards.length; i++) {
       const leaderCardData = leaderCards[i];
       const cardContainer = this.createLeaderCardWithRoundedCorners(playerLeaderDeckPos.x, playerStartY, leaderCardData);
       cardContainer.setDepth(1000 + i);
@@ -362,7 +362,7 @@ export default class ShuffleAnimationManager {
     
     // Create opponent leader cards starting from top of screen (separate deck)
     const opponentStartY = -100; // Start above screen
-    for (let i = 0; i < Math.min(4, leaderCards.length); i++) {
+    for (let i = 0; i < leaderCards.length; i++) {
       const leaderCardData = leaderCards[i];
       const cardContainer = this.createLeaderCardWithRoundedCorners(opponentLeaderDeckPos.x, opponentStartY, leaderCardData);
       cardContainer.setDepth(1000 + i);
@@ -442,9 +442,8 @@ export default class ShuffleAnimationManager {
   }
 
   createLeaderCardWithRoundedCorners(x, y, cardData = null) {
-    // Create the leader card image directly - use actual leader card if data provided
-    const cardKey = cardData ? `${cardData.id}-preview` : 'card-back-leader';
-    const leaderCard = this.scene.add.image(x, y, cardKey);
+    // Create the leader card image directly - always use card back during animation
+    const leaderCard = this.scene.add.image(x, y, 'card-back-leader');
     const scaleX = GAME_CONFIG.card.width / leaderCard.width;
     const scaleY = GAME_CONFIG.card.height / leaderCard.height;
     leaderCard.setScale(Math.min(scaleX, scaleY) * 0.95);

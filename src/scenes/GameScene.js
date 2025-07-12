@@ -449,7 +449,7 @@ export default class GameScene extends Phaser.Scene {
       });
       testLeaderButtonText.setOrigin(0.5);
       
-      this.testLeaderButton.on('pointerdown', () => this.openMenu());
+      this.testLeaderButton.on('pointerdown', () => this.selectLeaderCard());
 
   }
 
@@ -856,5 +856,125 @@ export default class GameScene extends Phaser.Scene {
     zone.placeholder = card; // Update placeholder reference
     
     console.log(`Created leader deck display for ${owner} with card:`, topCard.id);
+  }
+
+  selectLeaderCard() {
+    // Get the player leader deck zone
+    const playerLeaderDeckZone = this.playerZones.leaderDeck;
+    const playerLeaderZone = this.playerZones.leader;
+    
+    if (!playerLeaderDeckZone || !playerLeaderZone) {
+      console.log('Leader zones not found');
+      return;
+    }
+
+    // Check if there are leader cards in the animation manager
+    if (!this.shuffleAnimationManager || !this.shuffleAnimationManager.playerLeaderCards || this.shuffleAnimationManager.playerLeaderCards.length === 0) {
+      console.log('No leader cards available in deck');
+      return;
+    }
+
+    // Get the top card from the leader deck (first card in array - highest depth/position)
+    const topCardIndex = 0;
+    const topCard = this.shuffleAnimationManager.playerLeaderCards[topCardIndex];
+    
+    if (!topCard) {
+      console.log('No top card found');
+      return;
+    }
+
+    // Get the corresponding card data (the cards are in the same order as leaderCards array)
+    const cardData = this.leaderCards[this.leaderCards.length - this.shuffleAnimationManager.playerLeaderCards.length];
+    
+    if (!cardData) {
+      console.log('No card data found for top card');
+      return;
+    }
+
+    console.log('Moving leader card to leader position:', cardData.name);
+
+    // Animate the card moving to leader position and flipping
+    this.tweens.add({
+      targets: topCard,
+      x: playerLeaderZone.x,
+      y: playerLeaderZone.y,
+      rotation: 0, // Remove the 90-degree rotation
+      duration: 300,
+      ease: 'Power2.easeInOut',
+      onComplete: () => {
+        // NOW remove the card from the leader deck array
+        this.shuffleAnimationManager.playerLeaderCards.splice(topCardIndex, 1);
+
+        // Destroy the old card back image
+        topCard.destroy();
+        if (topCard.borderGraphics) {
+          topCard.borderGraphics.destroy();
+        }
+
+        // Create new card with actual leader card image (face up)
+        const leaderCard = new Card(this, playerLeaderZone.x, playerLeaderZone.y, cardData, {
+          interactive: true,
+          draggable: false,
+          scale: 0.9,
+          usePreview: false // Use original full-detail image for leader position
+        });
+
+        // Update the zone
+        playerLeaderZone.card = leaderCard;
+        if (playerLeaderZone.placeholder) {
+          playerLeaderZone.placeholder.setVisible(false);
+        }
+
+        console.log(`Leader card ${cardData.name} placed in leader position`);
+
+        // Move remaining cards forward to maintain top card position
+        this.repositionLeaderDeckCards();
+      }
+    });
+  }
+
+  repositionLeaderDeckCards() {
+    if (!this.shuffleAnimationManager || !this.shuffleAnimationManager.playerLeaderCards) {
+      return;
+    }
+
+    const playerLeaderDeckZone = this.playerZones.leaderDeck;
+    if (!playerLeaderDeckZone) {
+      return;
+    }
+
+    // Get the target position for the top card (same as original leaderDeck position)
+    const targetX = playerLeaderDeckZone.x;
+    const targetY = playerLeaderDeckZone.y;
+
+    // Animate remaining cards to their new positions
+    this.shuffleAnimationManager.playerLeaderCards.forEach((card, index) => {
+      // Calculate the new position based on the stacking offset
+      const newX = targetX;
+      const newY = targetY + (index * 30); // 30 pixel offset BELOW the leaderDeck position
+
+      // Animate card to new position
+      this.tweens.add({
+        targets: card,
+        x: newX,
+        y: newY,
+        duration: 150,
+        ease: 'Power2.easeOut'
+      });
+
+      // Also animate the border graphics if they exist
+      if (card.borderGraphics) {
+        this.tweens.add({
+          targets: card.borderGraphics,
+          x: newX,
+          y: newY,
+          duration: 150,
+          ease: 'Power2.easeOut'
+        });
+      }
+
+      // Update depth to maintain proper stacking order
+      card.setDepth(1000 + this.shuffleAnimationManager.playerLeaderCards.length - index);
+    });
   }
 }

@@ -16,6 +16,14 @@
         "power": 4,
         "effect": "American Revolution leader with strategic command"
       },
+
+      {
+        "id": "s-3", 
+        "name": "George Washington",
+        "type": "leader", 
+        "power": 4,
+        "effect": "American Revolution leader with strategic command"
+      },
       {
         "id": "s-4",
         "name": "Toussaint Louverture", 
